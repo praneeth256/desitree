@@ -23,6 +23,9 @@ app.use(cors({
     // Allow the configured frontend URL
     if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) return callback(null, true);
     
+    // In production, allow all origins for maximum compatibility
+    if (process.env.NODE_ENV === 'production') return callback(null, true);
+    
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true
@@ -34,7 +37,7 @@ app.use(session({
   secret: process.env.JWT_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // Set to true in production with HTTPS
+  cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' }
 }));
 
 // Initialize passport

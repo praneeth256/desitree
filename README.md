@@ -1,14 +1,120 @@
 # DesiTree - Video Streaming Platform
 
-DesiTree is a React + Vite frontend with a Node.js + Express backend for video streaming, user authentication, and admin management.
+A modern React + Node.js full-stack video streaming platform with admin uploads, user authentication, and global cloud hosting.
 
-## Setup Instructions
+## 🎬 Features
 
-### 1. Environment Variables
+✨ User authentication (email/password + Google OAuth 2.0)
+🎥 Admin video upload to Cloudinary
+🎮 Custom video player (mute, volume, fullscreen, no-download)
+📺 Video categories (Indian, NRI, Videsi)
+❤️ Likes, comments, and share functionality
+🛡️ Admin deletion & moderation
+📊 View count tracking
+🔒 Download protection
 
-Update the `server/.env` file with your credentials:
+## 🛠️ Tech Stack
 
-```env
+- **Frontend**: React 19, Vite, React Router DOM
+- **Backend**: Node.js, Express 5, Mongoose
+- **Database**: MongoDB (Atlas for cloud)
+- **Storage**: Cloudinary (video & thumbnails)
+- **Authentication**: JWT + Passport.js (Google OAuth 2.0)
+- **Cloud Hosting**: Vercel (frontend) + Railway (backend)
+
+## 🚀 Deploy Globally (Railway + Vercel)
+
+### Quick Deployment Steps:
+
+1. **Push to GitHub**
+   ```bash
+   git push origin main
+   ```
+
+2. **Deploy Backend on Railway** (Free tier available)
+   - Go to [railway.app](https://railway.app)
+   - New Project → Deploy from GitHub
+   - Select DesiTree repo
+   - Add environment variables (MONGO_URI, CLOUDINARY keys, etc.)
+   - Deploy → Get your backend URL (e.g., `https://desitree-backend.railway.app`)
+
+3. **Deploy Frontend on Vercel** (Free tier available)
+   - Go to [vercel.com](https://vercel.com)
+   - New Project → Import Git repo
+   - Root directory: `client/`
+   - Add env var: `VITE_API_BASE=<railway-backend-url>`
+   - Deploy → Get your frontend URL (e.g., `https://desitree.vercel.app`)
+
+**Full guide**: See [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## 📝 Local Development
+
+### Prerequisites
+- Node.js 18+
+- MongoDB (local or Atlas)
+- Cloudinary account
+- Google OAuth credentials
+
+### Setup
+
+1. **Install dependencies**
+   ```bash
+   cd server && npm install
+   cd ../client && npm install
+   ```
+
+2. **Backend (.env)**
+   ```
+   NODE_ENV=development
+   MONGO_URI=mongodb://localhost:27017/desitree
+   JWT_SECRET=your_secret
+   CLOUDINARY_CLOUD_NAME=your_name
+   CLOUDINARY_API_KEY=your_key
+   CLOUDINARY_API_SECRET=your_secret
+   GOOGLE_CLIENT_ID=your_id
+   GOOGLE_CLIENT_SECRET=your_secret
+   ```
+
+3. **Frontend (.env.local)**
+   ```
+   VITE_API_BASE=http://localhost:5000
+   ```
+
+4. **Start servers**
+   ```bash
+   # Terminal 1 - Backend
+   cd server && npm start
+   
+   # Terminal 2 - Frontend
+   cd client && npm run dev
+   ```
+
+5. **Create admin user**
+   ```bash
+   cd server && node create-admin.js
+   ```
+
+## 📖 API Routes
+
+**Auth**:
+- `POST /api/auth/signup` - Register
+- `POST /api/auth/signin` - Login
+- `GET /api/auth/google` - Google OAuth
+- `GET /api/auth/google/callback` - OAuth callback
+
+**Videos**:
+- `GET /api/videos` - List all
+- `GET /api/videos/:id` - Get single
+- `POST /api/videos/upload` - Upload (admin only)
+- `POST /api/videos/:id/views` - Increment views
+- `POST /api/videos/:id/like` - Toggle like
+- `DELETE /api/videos/:id` - Delete (admin only)
+- `POST /api/videos/:id/comments` - Add comment
+
+## 🌍 Now Live Worldwide!
+
+Your DesiTree platform is ready to serve users from anywhere on Earth! 🎉
+env
 MONGO_URI=mongodb://localhost:27017/desitree
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
