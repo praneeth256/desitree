@@ -111,6 +111,20 @@ A modern React + Node.js full-stack video streaming platform with admin uploads,
 - `DELETE /api/videos/:id` - Delete (admin only)
 - `POST /api/videos/:id/comments` - Add comment
 
+## 🌍 Custom Domain Deployment
+
+Deploy to your own domain (e.g., `desitree.in`):
+
+1. Purchase domain from any registrar (GoDaddy, Namecheap, etc.)
+2. Deploy backend to Railway with subdomain `api.desitree.in`
+3. Deploy frontend to Vercel with domain `desitree.in`
+4. Update DNS records (CNAME for API, Nameservers for frontend)
+5. SSL/HTTPS automatically configured
+
+**Complete guide**: See [CUSTOM_DOMAIN.md](./CUSTOM_DOMAIN.md)
+
+**Quick check**: Run `bash check-domain.sh` after DNS propagates (24-48h)
+
 ## 🌍 Now Live Worldwide!
 
 Your DesiTree platform is ready to serve users from anywhere on Earth! 🎉
