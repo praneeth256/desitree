@@ -5,7 +5,7 @@ import { getAuth } from 'firebase/auth';
 const auth = getAuth();
 
 // Cloudinary upload function
-export async function uploadToCloudinary(file, title, description, category) {
+export async function uploadToCloudinary(file, title, description, category, thumbnailFile = null) {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   if (!cloudName) {
     throw new Error('Cloudinary cloud name is missing. Please set VITE_CLOUDINARY_CLOUD_NAME in your Vercel environment variables.');
@@ -28,16 +28,36 @@ export async function uploadToCloudinary(file, title, description, category) {
 
   const data = await response.json();
 
+  let thumbnailUrl = data.thumbnail_url || data.secure_url.replace('.mp4', '.jpg');
+
+  // Upload custom thumbnail if provided
+  if (thumbnailFile) {
+    const thumbFormData = new FormData();
+    thumbFormData.append('file', thumbnailFile);
+    thumbFormData.append('upload_preset', 'desitree_videos');
+
+    const thumbResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: thumbFormData,
+    });
+
+    if (thumbResponse.ok) {
+      const thumbData = await thumbResponse.json();
+      thumbnailUrl = thumbData.secure_url;
+    }
+  }
+
   // Save video metadata to Firestore
   const videoData = {
     title,
     description,
     category,
     videoUrl: data.secure_url,
-    thumbnailUrl: data.thumbnail_url || data.secure_url.replace('.mp4', '.jpg'),
+    thumbnailUrl,
     duration: data.duration,
     views: 0,
     likes: 0,
+    likedBy: [],
     comments: [],
     uploadedAt: new Date(),
     uploadedBy: auth.currentUser?.email || 'admin'
@@ -49,7 +69,8 @@ export async function uploadToCloudinary(file, title, description, category) {
 
 export async function fetchVideos(category = null) {
   let q;
-  if (category && category !== 'All') {
+  const specialFilters = ['most-viewed', 'most-liked'];
+  if (category && category !== 'All' && !specialFilters.includes(category)) {
     q = query(collection(db, 'videos'), where('category', '==', category), orderBy('uploadedAt', 'desc'));
   } else {
     q = query(collection(db, 'videos'), orderBy('uploadedAt', 'desc'));
@@ -95,11 +116,36 @@ export async function likeVideo(id) {
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
-    const currentLikes = docSnap.data().likes || 0;
+    const data = docSnap.data();
+    const currentLikes = data.likes || 0;
+    const likedBy = data.likedBy || [];
+    const userId = auth.currentUser?.uid;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const alreadyLiked = likedBy.includes(userId);
+    let newLikes;
+    let newLikedBy;
+
+    if (alreadyLiked) {
+      newLikes = Math.max(0, currentLikes - 1);
+      newLikedBy = likedBy.filter((uid) => uid !== userId);
+    } else {
+      newLikes = currentLikes + 1;
+      newLikedBy = [...likedBy, userId];
+    }
+
     await updateDoc(docRef, {
-      likes: currentLikes + 1
+      likes: newLikes,
+      likedBy: newLikedBy
     });
+
+    return { likes: newLikes, liked: !alreadyLiked };
   }
+
+  throw new Error('Video not found');
 }
 
 export async function addComment(id, text) {
@@ -128,3 +174,4 @@ export async function fetchComments(id) {
   }
   return [];
 }
+

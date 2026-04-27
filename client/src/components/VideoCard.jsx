@@ -1,11 +1,16 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const PREVIEW_SEGMENTS = [0.1, 0.3, 0.5, 0.7];
+const SEGMENT_DURATION = 2; // seconds per key scene
 
 export default function VideoCard({ video, variant = 'grid' }) {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const [progress, setProgress] = useState(0);
   const [hovering, setHovering] = useState(false);
+  const segmentIndexRef = useRef(0);
+  const intervalRef = useRef(null);
 
   const formatDuration = (seconds) => {
     if (!seconds || isNaN(seconds)) return '0:00';
@@ -19,15 +24,60 @@ export default function VideoCard({ video, variant = 'grid' }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const clearPreviewInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  const startKeyScenePreview = useCallback(() => {
+    const vid = videoRef.current;
+    if (!vid || !vid.duration || isNaN(vid.duration)) return;
+
+    segmentIndexRef.current = 0;
+    const duration = vid.duration;
+
+    const jumpToSegment = () => {
+      const segmentPercent = PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length];
+      vid.currentTime = duration * segmentPercent;
+    };
+
+    jumpToSegment();
+    vid.play().catch(() => {});
+
+    intervalRef.current = setInterval(() => {
+      const segmentPercent = PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length];
+      const segmentStart = duration * segmentPercent;
+      
+      if (vid.currentTime >= segmentStart + SEGMENT_DURATION) {
+        segmentIndexRef.current += 1;
+        const nextSegmentPercent = PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length];
+        vid.currentTime = duration * nextSegmentPercent;
+      }
+    }, 250);
+  }, []);
+
   const handleMouseEnter = () => {
     if (!videoRef.current) return;
-    videoRef.current.currentTime = 0;
-    videoRef.current.play().catch(() => {});
     setHovering(true);
+    
+    if (videoRef.current.readyState >= 1 && videoRef.current.duration) {
+      startKeyScenePreview();
+    } else {
+      const handleLoaded = () => {
+        startKeyScenePreview();
+        videoRef.current.removeEventListener('loadedmetadata', handleLoaded);
+      };
+      videoRef.current.addEventListener('loadedmetadata', handleLoaded);
+      videoRef.current.preload = 'metadata';
+      videoRef.current.load();
+    }
   };
 
   const handleMouseLeave = () => {
     if (!videoRef.current) return;
+    clearPreviewInterval();
     videoRef.current.pause();
     videoRef.current.currentTime = 0;
     setProgress(0);
@@ -40,6 +90,10 @@ export default function VideoCard({ video, variant = 'grid' }) {
     setProgress(Number.isNaN(percentage) ? 0 : percentage);
   };
 
+  useEffect(() => {
+    return () => clearPreviewInterval();
+  }, []);
+
   return (
     <div
       className={`video-card ${variant}`}
@@ -51,11 +105,11 @@ export default function VideoCard({ video, variant = 'grid' }) {
         <img src={video.thumbnailUrl || video.thumb} alt={video.title} loading="lazy" />
         <video
           ref={videoRef}
-          src={video.previewUrl || video.preview}
+          src={video.previewUrl || video.preview || video.videoUrl}
           muted
-          loop
+          loop={false}
           playsInline
-          preload="none"
+          preload="metadata"
           onTimeUpdate={handleTimeUpdate}
         />
         <div className="duration-badge">{formatDuration(video.duration)}</div>
@@ -67,7 +121,7 @@ export default function VideoCard({ video, variant = 'grid' }) {
       <div className="card-info">
         <div className="card-title">{video.title}</div>
         <div className="card-meta">
-          <span className="card-views">{video.views.toLocaleString()} views · {video.date || ''}</span>
+          <span className="card-views">{video.views?.toLocaleString?.() || 0} views · {video.date || ''}</span>
           {video.premium ? (
             <span className="card-cat premium-label">PREMIUM</span>
           ) : (
@@ -78,3 +132,4 @@ export default function VideoCard({ video, variant = 'grid' }) {
     </div>
   );
 }
+
