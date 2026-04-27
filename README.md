@@ -111,19 +111,50 @@ A modern React + Node.js full-stack video streaming platform with admin uploads,
 - `DELETE /api/videos/:id` - Delete (admin only)
 - `POST /api/videos/:id/comments` - Add comment
 
-## 🌍 Custom Domain Deployment
+## 🌍 Production Deployment to desitree.in
 
-Deploy to your own domain (e.g., `desitree.in`):
+Your app is configured for **Railway** (backend) + **Vercel** (frontend) with custom domain `desitree.in`.
 
-1. Purchase domain from any registrar (GoDaddy, Namecheap, etc.)
-2. Deploy backend to Railway with subdomain `api.desitree.in`
-3. Deploy frontend to Vercel with domain `desitree.in`
-4. Update DNS records (CNAME for API, Nameservers for frontend)
-5. SSL/HTTPS automatically configured
+### 🚀 Quick Deploy Steps:
 
-**Complete guide**: See [CUSTOM_DOMAIN.md](./CUSTOM_DOMAIN.md)
+1. **Push to GitHub**:
+   ```bash
+   cd c:\Users\Administrator\Downloads\DT
+   git remote add origin https://github.com/YOUR_USERNAME/desitree.git
+   git branch -M main
+   git push -u origin main
+   ```
 
-**Quick check**: Run `bash check-domain.sh` after DNS propagates (24-48h)
+2. **Deploy Backend to Railway**:
+   - Visit [railway.app](https://railway.app) → New Project → Deploy from GitHub
+   - Select `desitree` repo → Deploy
+   - Add environment variables (see `.env.production`)
+   - Get Railway URL (e.g., `https://desitree-backend.railway.app`)
+
+3. **Deploy Frontend to Vercel**:
+   - Visit [vercel.com](https://vercel.com) → New Project → Import Git
+   - Select `desitree` repo → Root directory: `client/`
+   - Add env var: `VITE_API_BASE=https://api.desitree.in`
+   - Deploy → Get Vercel URL
+
+4. **Configure Custom Domains**:
+   - **Railway**: Add `api.desitree.in` in Settings → Domains
+   - **Vercel**: Add `desitree.in` and `www.desitree.in` in Settings → Domains
+
+5. **Update DNS in GoDaddy**:
+   - Login to GoDaddy → Domain Settings → DNS Management
+   - Add CNAME: `api` → `cname.railway.app`
+   - Change nameservers to Vercel's (shown in Vercel dashboard)
+
+6. **Update Environment Variables**:
+   - Railway: `FRONTEND_URL=https://desitree.in`
+   - Vercel: `VITE_API_BASE=https://api.desitree.in`
+
+7. **Test**: Run `bash check-domain.sh` after 24-48 hours
+
+**Full guide**: See [DEPLOYMENT.md](./DEPLOYMENT.md) and [CUSTOM_DOMAIN.md](./CUSTOM_DOMAIN.md)
+
+**Automated script**: Run `bash deploy-desitree.sh` for step-by-step guidance
 
 ## 🌍 Now Live Worldwide!
 
