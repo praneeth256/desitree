@@ -6,18 +6,24 @@ const auth = getAuth();
 
 // Cloudinary upload function
 export async function uploadToCloudinary(file, title, description, category) {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) {
+    throw new Error('Cloudinary cloud name is missing. Please set VITE_CLOUDINARY_CLOUD_NAME in your Vercel environment variables.');
+  }
+
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', 'desitree_videos'); // You'll need to create this preset in Cloudinary
-  formData.append('cloud_name', import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
+  formData.append('upload_preset', 'desitree_videos'); // Must be an unsigned preset in Cloudinary
 
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/video/upload`, {
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
     method: 'POST',
     body: formData,
   });
 
   if (!response.ok) {
-    throw new Error('Upload to Cloudinary failed');
+    const errorData = await response.json().catch(() => ({ error: { message: 'Unknown Cloudinary error' } }));
+    const errorMessage = errorData?.error?.message || JSON.stringify(errorData);
+    throw new Error(`Cloudinary upload failed: ${errorMessage}`);
   }
 
   const data = await response.json();
