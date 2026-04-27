@@ -21,47 +21,45 @@ export default function Player() {
 
   useEffect(() => {
     if (!id) return;
-    
-    console.log('Loading video:', id);
-    fetchVideoById(id)
-      .then((data) => {
-        console.log('Video data received:', data);
+
+    const loadVideo = async () => {
+      try {
+        const data = await fetchVideoById(id);
         setVideo(data);
         setLikes(data.likes || 0);
         setIsLiked(user && data.likedBy?.includes(user.id));
-        return incrementVideoViews(id);
-      })
-      .then((update) => {
-        console.log('Views updated:', update);
-        setVideo((current) => (current ? { ...current, views: update.views } : current));
-      })
-      .catch((err) => {
-        console.error('Error loading video:', err);
-        const fallback = sampleVideos.find((item) => String(item.id) === String(id));
-        if (fallback) {
-          setVideo({ ...fallback, views: fallback.views + 1 });
-        }
-      });
 
-    fetchComments(id)
-      .then(setComments)
-      .catch(console.error);
+        await incrementVideoViews(id);
+        setVideo((current) => (current ? { ...current, views: (current.views || 0) + 1 } : current));
+      } catch (error) {
+        console.error('Error loading video:', error);
+        navigate('/');
+      }
+    };
 
-    fetchVideos()
-      .then((allVideos) => {
-        const currentVideo = allVideos.find((item) => String(item._id || item.id) === String(id));
-        const similar = allVideos.filter((item) => String(item._id || item.id) !== String(id));
-        if (currentVideo) {
-          setSimilarVideos(similar.slice(0, 10));
-        } else {
-          setSimilarVideos(allVideos.filter((item) => String(item._id || item.id) !== String(id)).slice(0, 10));
-        }
-      })
-      .catch(() => {
-        const fallback = sampleVideos.filter((item) => String(item.id) !== String(id));
-        setSimilarVideos(fallback.slice(0, 10));
-      });
-  }, [id, user]);
+    const loadComments = async () => {
+      try {
+        const commentsData = await fetchComments(id);
+        setComments(commentsData);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+      }
+    };
+
+    const loadSimilarVideos = async () => {
+      try {
+        const allVideos = await fetchVideos();
+        const similar = allVideos.filter(v => v.id !== id).slice(0, 8);
+        setSimilarVideos(similar);
+      } catch (error) {
+        console.error('Error loading similar videos:', error);
+      }
+    };
+
+    loadVideo();
+    loadComments();
+    loadSimilarVideos();
+  }, [id, user, navigate]);
 
   const filteredSimilar = useMemo(() => similarVideos.slice(0, 10), [similarVideos]);
 

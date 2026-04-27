@@ -27,10 +27,18 @@ export default function Home() {
   const COLS = 4;
 
   useEffect(() => {
-    fetchVideos()
-      .then((data) => setVideos(data))
-      .catch(() => setVideos(sampleVideos));
-  }, []);
+    const loadVideos = async () => {
+      try {
+        const category = selectedFilter === 'all' ? null : selectedFilter;
+        const data = await fetchVideos(category);
+        setVideos(data);
+      } catch (error) {
+        console.error('Failed to fetch videos:', error);
+        setVideos([]);
+      }
+    };
+    loadVideos();
+  }, [selectedFilter]);
 
   useEffect(() => {
     if (user && !loading) {

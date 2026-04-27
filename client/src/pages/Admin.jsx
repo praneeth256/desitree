@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import { uploadVideo } from '../services/api';
+import { uploadToCloudinary } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const initialForm = {
   title: '',
   description: '',
   category: 'indian',
-  duration: '',
-  tags: '',
 };
 
 export default function Admin() {
   const [form, setForm] = useState(initialForm);
   const [videoFile, setVideoFile] = useState(null);
-  const [thumbnailFile, setThumbnailFile] = useState(null);
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,10 +29,9 @@ export default function Admin() {
     setForm((current) => ({ ...current, [field]: event.target.value }));
   };
 
-  const handleFileChange = (field) => (event) => {
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
-    if (field === 'video') setVideoFile(file);
-    if (field === 'thumbnail') setThumbnailFile(file);
+    setVideoFile(file);
   };
 
   const handleSubmit = async (event) => {
@@ -47,24 +43,12 @@ export default function Admin() {
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('title', form.title);
-      formData.append('description', form.description);
-      formData.append('category', form.category);
-      formData.append('duration', form.duration);
-      formData.append('tags', form.tags);
-      formData.append('video', videoFile);
-      if (thumbnailFile) {
-        formData.append('thumbnail', thumbnailFile);
-      }
-
-      await uploadVideo(formData);
+      await uploadToCloudinary(videoFile, form.title, form.description, form.category);
       setMessage('Video uploaded successfully!');
       setForm(initialForm);
       setVideoFile(null);
-      setThumbnailFile(null);
-    } catch {
-      setMessage('Upload failed. Please check your authentication and try again.');
+    } catch (error) {
+      setMessage('Upload failed: ' + error.message);
     } finally {
       setIsUploading(false);
     }
@@ -99,26 +83,14 @@ export default function Admin() {
               </select>
             </label>
             <label>
-              Duration (e.g. 42:18)
-              <input value={form.duration} onChange={handleChange('duration')} placeholder="42:18" />
-            </label>
-            <label>
               Video File
-              <input type="file" accept="video/*" onChange={handleFileChange('video')} required />
+              <input type="file" accept="video/*" onChange={handleFileChange} required />
             </label>
-            <label>
-              Thumbnail Image (optional)
-              <input type="file" accept="image/*" onChange={handleFileChange('thumbnail')} />
-            </label>
-            <label>
-              Tags (comma separated)
-              <input value={form.tags} onChange={handleChange('tags')} placeholder="JavaScript, Programming" />
-            </label>
-            <button className="btn-premium" type="submit" disabled={isUploading}>
+            <button type="submit" disabled={isUploading}>
               {isUploading ? 'Uploading...' : 'Upload Video'}
             </button>
-            {message && <div className="admin-message">{message}</div>}
           </form>
+          {message && <p className="message">{message}</p>}
         </div>
       </main>
     </>
