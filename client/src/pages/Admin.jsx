@@ -13,6 +13,7 @@ const initialForm = {
 export default function Admin() {
   const [form, setForm] = useState(initialForm);
   const [videoFile, setVideoFile] = useState(null);
+  const [thumbnailFile, setThumbnailFile] = useState(null);
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,6 +35,11 @@ export default function Admin() {
     setVideoFile(file);
   };
 
+  const handleThumbnailChange = (event) => {
+    const file = event.target.files[0];
+    setThumbnailFile(file);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!videoFile) {
@@ -43,10 +49,11 @@ export default function Admin() {
 
     setIsUploading(true);
     try {
-      await uploadToCloudinary(videoFile, form.title, form.description, form.category);
+      await uploadToCloudinary(videoFile, form.title, form.description, form.category, thumbnailFile);
       setMessage('Video uploaded successfully!');
       setForm(initialForm);
       setVideoFile(null);
+      setThumbnailFile(null);
     } catch (error) {
       setMessage('Upload failed: ' + error.message);
     } finally {
@@ -86,6 +93,10 @@ export default function Admin() {
               Video File
               <input type="file" accept="video/*" onChange={handleFileChange} required />
             </label>
+            <label>
+              Thumbnail (optional)
+              <input type="file" accept="image/*" onChange={handleThumbnailChange} />
+            </label>
             <button type="submit" disabled={isUploading}>
               {isUploading ? 'Uploading...' : 'Upload Video'}
             </button>
@@ -96,3 +107,4 @@ export default function Admin() {
     </>
   );
 }
+
