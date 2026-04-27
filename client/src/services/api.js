@@ -122,7 +122,3 @@ export async function fetchComments(id) {
   }
   return [];
 }
-  const response = await fetch(`${BASE_URL}/api/videos/${id}/comments`);
-  if (!response.ok) throw new Error('Unable to fetch comments');
-  return response.json();
-}
