@@ -12,7 +12,6 @@ export default function Navigation({ search, onSearch, showAdmin = false }) {
   const searchRef = useRef(null);
   const wrapRef = useRef(null);
 
-  // Load all videos for search suggestions
   useEffect(() => {
     const loadVideos = async () => {
       try {
@@ -25,7 +24,6 @@ export default function Navigation({ search, onSearch, showAdmin = false }) {
     loadVideos();
   }, []);
 
-  // Filter suggestions based on search input
   useEffect(() => {
     const trimmed = search.trim().toLowerCase();
     if (!trimmed) {
@@ -38,7 +36,6 @@ export default function Navigation({ search, onSearch, showAdmin = false }) {
     setSuggestions(matched);
   }, [search, allVideos]);
 
-  // Close suggestions on click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (wrapRef.current && !wrapRef.current.contains(event.target)) {
@@ -68,12 +65,19 @@ export default function Navigation({ search, onSearch, showAdmin = false }) {
     }
   };
 
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    onSearch('');
+    setShowSuggestions(false);
+    navigate('/');
+  };
+
   return (
     <nav>
-      <NavLink to="/" className="logo">Desi<span>Tree</span></NavLink>
+      <NavLink to="/" className="logo" onClick={handleLogoClick}>Desi<span>Tree</span></NavLink>
       <div className="nav-center">
         <div className="search-wrap" ref={wrapRef}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input
             ref={searchRef}
             value={search}
@@ -134,4 +138,3 @@ export default function Navigation({ search, onSearch, showAdmin = false }) {
     </nav>
   );
 }
-

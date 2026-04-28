@@ -1,4 +1,4 @@
-# Fix Plan TODO
+
 
 - [x] Create TODO.md
 - [x] Update `client/src/services/api.js` (thumbnail upload, fix fetchVideos, fix likeVideo, init likedBy)

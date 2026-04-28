@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import VideoCard from '../components/VideoCard';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
+import ShareModal from '../components/ShareModal';
 import { fetchVideoById, fetchVideos, incrementVideoViews, deleteVideo, likeVideo, addComment, fetchComments } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { sampleVideos } from '../data/videos';
 
 export default function Player() {
   const { id } = useParams();
@@ -18,6 +18,7 @@ export default function Player() {
   const [commentText, setCommentText] = useState('');
   const [isLiked, setIsLiked] = useState(false);
   const [likes, setLikes] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -33,7 +34,6 @@ export default function Player() {
         return;
       }
 
-      // Increment views separately — don't redirect if this fails
       try {
         await incrementVideoViews(id);
         setVideo((current) => (current ? { ...current, views: (current.views || 0) + 1 } : current));
@@ -66,7 +66,6 @@ export default function Player() {
     loadSimilarVideos();
   }, [id, navigate]);
 
-  // Update like state when user auth resolves or changes
   useEffect(() => {
     if (video && user) {
       setIsLiked(video.likedBy?.includes(user.id));
@@ -120,15 +119,13 @@ export default function Player() {
   };
 
   const handleShare = () => {
-    const url = window.location.href;
     if (navigator.share) {
       navigator.share({
         title: video.title,
-        url,
+        url: window.location.href,
       });
     } else {
-      navigator.clipboard.writeText(url);
-      alert('Link copied to clipboard!');
+      setShowShareModal(true);
     }
   };
 
@@ -177,10 +174,9 @@ export default function Player() {
         </div>
 
         <div className="video-info-block">
-
           <div className="action-buttons">
             <button
-              className={`btn-action ${isLiked ? 'liked' : ''}`}
+              className={isLiked ? 'btn-action liked' : 'btn-action'}
               onClick={handleLike}
               title="Like"
             >
@@ -254,6 +250,14 @@ export default function Player() {
           </div>
         </div>
       </main>
+
+      {showShareModal && video && (
+        <ShareModal
+          url={window.location.href}
+          title={video.title}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </>
   );
 }

@@ -24,7 +24,6 @@ export default function Home() {
   const { user, loading } = useAuth();
 
   const VIDEOS_PER_PAGE = 16;
-  const COLS = 4;
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -75,7 +74,11 @@ export default function Home() {
       filtered.sort((a, b) => b.likes - a.likes);
     } else {
       // Most recent first for 'all' and category filters
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      filtered.sort((a, b) => {
+        const dateA = a.uploadedAt ? new Date(a.uploadedAt.seconds ? a.uploadedAt.toDate() : a.uploadedAt) : new Date(0);
+        const dateB = b.uploadedAt ? new Date(b.uploadedAt.seconds ? b.uploadedAt.toDate() : b.uploadedAt) : new Date(0);
+        return dateB - dateA;
+      });
     }
 
     return filtered;
