@@ -10,7 +10,8 @@ service cloud.firestore {
       allow create, delete: if request.auth != null;
 
       // Allow view increment: only the 'views' field can change
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
         && request.resource.data.views == resource.data.views + 1;
     }
 
@@ -20,11 +21,10 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
 
-    // Contacts / DMCA submissions - anyone can submit
-    // Only authenticated users can read (client-side admin check protects UI)
+    // Contacts / DMCA submissions - any authenticated user can submit
+    // Any authenticated user can read (client-side admin check protects UI)
     match /contacts/{contactId} {
-      allow read: if request.auth != null;
-      allow create: if true;
+      allow read, create: if request.auth != null;
     }
   }
 }
