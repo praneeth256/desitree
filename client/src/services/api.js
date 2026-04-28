@@ -71,7 +71,8 @@ export async function fetchVideos(category = null) {
   let q;
   const specialFilters = ['most-viewed', 'most-liked'];
   if (category && category !== 'All' && !specialFilters.includes(category)) {
-    q = query(collection(db, 'videos'), where('category', '==', category), orderBy('uploadedAt', 'desc'));
+    // Firestore composite index not required when we don't use orderBy with where
+    q = query(collection(db, 'videos'), where('category', '==', category));
   } else {
     q = query(collection(db, 'videos'), orderBy('uploadedAt', 'desc'));
   }
