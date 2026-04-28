@@ -147,15 +147,7 @@ export default function Player() {
     <>
       <Navigation search={searchTerm} onSearch={setSearchTerm} showAdmin={false} />
       <main className="player-page">
-        <div className="player-wrap">
-          {video.videoUrl ? (
-            <CustomVideoPlayer src={video.videoUrl} poster={video.thumbnailUrl || video.previewUrl} />
-          ) : (
-            <div className="player-error">Video URL not available</div>
-          )}
-        </div>
-
-        <div className="video-info-block">
+        <div className="video-info-block" style={{ marginBottom: '0.75rem' }}>
           <div className="video-header-row">
             <div>
               <div className="video-main-title">
@@ -174,6 +166,17 @@ export default function Player() {
               </button>
             )}
           </div>
+        </div>
+
+        <div className="player-wrap">
+          {video.videoUrl ? (
+            <CustomVideoPlayer src={video.videoUrl} poster={video.thumbnailUrl || video.previewUrl} />
+          ) : (
+            <div className="player-error">Video URL not available</div>
+          )}
+        </div>
+
+        <div className="video-info-block">
 
           <div className="action-buttons">
             <button

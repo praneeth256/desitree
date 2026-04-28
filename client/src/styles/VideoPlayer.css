@@ -26,20 +26,18 @@
 }
 
 .play-overlay-button {
-  background: #ffff00;
+  background: transparent;
   border: none;
-  border-radius: 50%;
-  padding: 10px;
+  padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .play-overlay-button:hover {
-  transform: scale(1.05);
-  background: rgba(0, 0, 0, 0.5);
+  transform: scale(1.08);
 }
 
 .video-controls {

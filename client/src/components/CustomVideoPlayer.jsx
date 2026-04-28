@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import '../styles/VideoPlayer.css';
 
 export default function CustomVideoPlayer({ src, poster }) {
@@ -67,19 +67,72 @@ export default function CustomVideoPlayer({ src, poster }) {
     event.preventDefault();
   };
 
-  const toggleFullscreen = () => {
-    if (!isFullscreen) {
-      if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
+  const enterFullscreen = useCallback(async () => {
+    const el = containerRef.current;
+    if (!el) return;
+    try {
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      } else if (el.webkitRequestFullscreen) {
+        await el.webkitRequestFullscreen();
+      } else if (el.msRequestFullscreen) {
+        await el.msRequestFullscreen();
+      } else if (videoRef.current?.webkitEnterFullscreen) {
+        // iOS Safari specific
+        videoRef.current.webkitEnterFullscreen();
       }
-    } else {
-      if (document.fullscreenElement && document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
     }
-  };
+  }, []);
+
+  const exitFullscreen = useCallback(async () => {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        await document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        await document.msExitFullscreen();
+      }
+    } catch (err) {
+      console.error('Exit fullscreen error:', err);
+    }
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const fullscreenElement =
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.msFullscreenElement;
+
+    if (!fullscreenElement) {
+      enterFullscreen();
+    } else {
+      exitFullscreen();
+    }
+  }, [enterFullscreen, exitFullscreen]);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const fullscreenElement =
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement;
+      setIsFullscreen(!!fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const handleMouseMove = () => {
     setShowControls(true);
@@ -162,9 +215,9 @@ export default function CustomVideoPlayer({ src, poster }) {
       {!isPlaying && (
         <div className="play-indicator">
           <button className="play-overlay-button" type="button" onClick={togglePlayPause} aria-label="Play video">
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <circle cx="32" cy="32" r="30" stroke="black" strokeWidth="2" opacity="1" />
-              <path d="M26 20v24l18-12-18-12z" fill="black" />
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect x="4" y="4" width="40" height="40" rx="4" fill="#f0c040" />
+              <path d="M19 14v20l14-10-14-10z" fill="white" />
             </svg>
           </button>
         </div>
@@ -241,3 +294,4 @@ export default function CustomVideoPlayer({ src, poster }) {
     </div>
   );
 }
+
