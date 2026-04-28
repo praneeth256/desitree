@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'admin@desitree.com';
+    }
+
+    // Videos - anyone can read
+    // Admin can create/delete
+    // Anyone (including anonymous) can increment views only
+    match /videos/{videoId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+
+      // Allow view increment: only the 'views' field can change, and user must be authenticated (anonymous OK)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+        && request.resource.data.views == resource.data.views + 1;
+    }
+
+    // Comments - anyone authenticated can add, anyone can read
+    match /videos/{videoId}/comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+    }
+
+    // Contacts / DMCA submissions - anyone (including anonymous) can submit
+    // Only admin can read
+    match /contacts/{contactId} {
+      allow read: if isAdmin();
+      allow create: if request.auth != null;
+    }
+  }
+}
