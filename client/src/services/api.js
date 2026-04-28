@@ -103,15 +103,21 @@ export async function fetchVideoById(id) {
 }
 
 export async function incrementVideoViews(id) {
-  await ensureAuth();
-  const docRef = doc(db, 'videos', id);
-  const docSnap = await getDoc(docRef);
+  try {
+    await ensureAuth();
+  } catch (authError) {
+    console.error('Anonymous auth failed:', authError);
+  }
 
-  if (docSnap.exists()) {
-    const currentViews = docSnap.data().views || 0;
-    await updateDoc(docRef, {
-      views: currentViews + 1
-    });
+  const docRef = doc(db, 'videos', id);
+  try {
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const currentViews = docSnap.data().views || 0;
+      await updateDoc(docRef, { views: currentViews + 1 });
+    }
+  } catch (error) {
+    console.error('Error incrementing views:', error);
   }
 }
 
@@ -204,4 +210,3 @@ export async function fetchContacts() {
   });
   return contacts;
 }
-

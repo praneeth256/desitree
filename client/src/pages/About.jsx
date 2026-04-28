@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 
 export default function About() {
+  const [searchTerm, setSearchTerm] = useState('');
   return (
     <>
-      <Navigation showAdmin={false} />
+      <Navigation search={searchTerm} onSearch={setSearchTerm} showAdmin={false} />
       <main className="about-page">
         <div className="about-card">
           <h1>About Us</h1>
@@ -22,4 +24,3 @@ export default function About() {
     </>
   );
 }
-
