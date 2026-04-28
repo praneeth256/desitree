@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatViews } from '../utils/formatViews';
 
 const PREVIEW_SEGMENTS = [0.1, 0.3, 0.5, 0.7];
 const SEGMENT_DURATION = 2; // seconds per key scene
@@ -146,7 +147,7 @@ export default function VideoCard({ video, variant = 'grid' }) {
       <div className="card-info">
         <div className="card-title">{video.title}</div>
         <div className="card-meta">
-          <span className="card-views">{video.views?.toLocaleString?.() || 0} views · {video.date || ''}</span>
+          <span className="card-views">{formatViews(video.views)} views · {video.date || ''}</span>
           {video.premium ? (
             <span className="card-cat premium-label">PREMIUM</span>
           ) : (

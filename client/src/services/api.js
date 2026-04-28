@@ -1,8 +1,14 @@
 import { collection, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const auth = getAuth();
+
+async function ensureAuth() {
+  if (!auth.currentUser) {
+    await signInAnonymously(auth);
+  }
+}
 
 // Cloudinary upload function
 export async function uploadToCloudinary(file, title, description, category, thumbnailFile = null) {
@@ -97,6 +103,7 @@ export async function fetchVideoById(id) {
 }
 
 export async function incrementVideoViews(id) {
+  await ensureAuth();
   const docRef = doc(db, 'videos', id);
   const docSnap = await getDoc(docRef);
 
@@ -174,5 +181,27 @@ export async function fetchComments(id) {
     return docSnap.data().comments || [];
   }
   return [];
+}
+
+export async function submitContactForm({ name, email, subject, message }) {
+  const contactData = {
+    name,
+    email,
+    subject,
+    message,
+    createdAt: new Date()
+  };
+  const docRef = await addDoc(collection(db, 'contacts'), contactData);
+  return { id: docRef.id, ...contactData };
+}
+
+export async function fetchContacts() {
+  const q = query(collection(db, 'contacts'), orderBy('createdAt', 'desc'));
+  const querySnapshot = await getDocs(q);
+  const contacts = [];
+  querySnapshot.forEach((doc) => {
+    contacts.push({ id: doc.id, ...doc.data() });
+  });
+  return contacts;
 }
 

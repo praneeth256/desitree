@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navigation from '../components/Navigation';
+import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import ShareModal from '../components/ShareModal';
 import { fetchVideoById, fetchVideos, incrementVideoViews, deleteVideo, likeVideo, addComment, fetchComments } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { formatViews } from '../utils/formatViews';
 
 export default function Player() {
   const { id } = useParams();
@@ -152,7 +154,7 @@ export default function Player() {
                 {video.premium && <span className="premium-badge-big">PREMIUM</span>}
               </div>
               <div className="video-stats-row">
-                <span className="stat">{video.views?.toLocaleString?.() || 0} views</span>
+                <span className="stat">{formatViews(video.views)} views</span>
                 <span className="stat">·</span>
                 <span className="stat">{video.uploadedAt ? new Date(video.uploadedAt.seconds ? video.uploadedAt.toDate() : video.uploadedAt).toLocaleDateString() : ''}</span>
               </div>
@@ -258,6 +260,7 @@ export default function Player() {
           onClose={() => setShowShareModal(false)}
         />
       )}
+      <Footer />
     </>
   );
 }

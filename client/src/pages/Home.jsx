@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Navigation from '../components/Navigation';
+import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
 import { fetchVideos } from '../services/api';
 import { sampleVideos } from '../data/videos';
@@ -145,6 +146,7 @@ export default function Home() {
           </div>
         )}
       </main>
+      <Footer />
     </>
   );
 }
