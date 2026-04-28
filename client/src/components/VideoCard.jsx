@@ -4,6 +4,12 @@ import { useNavigate } from 'react-router-dom';
 const PREVIEW_SEGMENTS = [0.1, 0.3, 0.5, 0.7];
 const SEGMENT_DURATION = 2; // seconds per key scene
 
+// Detect touch device once on mount
+const isTouchDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+};
+
 export default function VideoCard({ video, variant = 'grid' }) {
   const navigate = useNavigate();
   const videoRef = useRef(null);
@@ -11,6 +17,7 @@ export default function VideoCard({ video, variant = 'grid' }) {
   const [hovering, setHovering] = useState(false);
   const segmentIndexRef = useRef(0);
   const intervalRef = useRef(null);
+  const touchDeviceRef = useRef(isTouchDevice());
 
   const formatDuration = (seconds) => {
     if (!seconds || isNaN(seconds)) return '0:00';
@@ -59,6 +66,8 @@ export default function VideoCard({ video, variant = 'grid' }) {
   }, []);
 
   const handleMouseEnter = () => {
+    // Skip hover preview on touch devices to avoid interfering with taps
+    if (touchDeviceRef.current) return;
     if (!videoRef.current) return;
     setHovering(true);
     
@@ -76,6 +85,7 @@ export default function VideoCard({ video, variant = 'grid' }) {
   };
 
   const handleMouseLeave = () => {
+    if (touchDeviceRef.current) return;
     if (!videoRef.current) return;
     clearPreviewInterval();
     videoRef.current.pause();
@@ -90,6 +100,10 @@ export default function VideoCard({ video, variant = 'grid' }) {
     setProgress(Number.isNaN(percentage) ? 0 : percentage);
   };
 
+  const handleClick = () => {
+    navigate(`/player/${video._id || video.id}`);
+  };
+
   useEffect(() => {
     return () => clearPreviewInterval();
   }, []);
@@ -99,7 +113,15 @@ export default function VideoCard({ video, variant = 'grid' }) {
       className={`video-card ${variant}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={() => navigate(`/player/${video._id || video.id}`)}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
       <div className="thumb-wrap">
         <img src={video.thumbnailUrl || video.thumb} alt={video.title} loading="lazy" />
@@ -111,6 +133,7 @@ export default function VideoCard({ video, variant = 'grid' }) {
           playsInline
           preload="metadata"
           onTimeUpdate={handleTimeUpdate}
+          style={{ pointerEvents: 'none' }}
         />
         <div className="duration-badge">{formatDuration(video.duration)}</div>
         {video.premium && <div className="premium-ribbon">PREMIUM</div>}

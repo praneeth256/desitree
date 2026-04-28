@@ -1,3 +1,7 @@
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -11,19 +15,20 @@ nav {
   background: rgba(12, 12, 16, 0.96);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
-  height: 54px;
+  min-height: 54px;
   display: flex;
   align-items: center;
-  padding: 0 1.5rem;
-  gap: 2rem;
+  padding: 0 1rem;
+  gap: 1rem;
 }
 
 .logo {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--accent);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .logo span {
@@ -35,18 +40,21 @@ nav {
   display: flex;
   justify-content: center;
   align-items: center;
+  min-width: 0;
 }
 
 .nav-right {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .search-wrap {
   position: relative;
   max-width: 400px;
   width: 100%;
+  min-width: 0;
 }
 
 .search-wrap svg {
@@ -64,7 +72,7 @@ nav {
   border-radius: 8px;
   padding: 8px 16px 8px 40px;
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   width: 100%;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -77,13 +85,14 @@ nav {
 
 .btn,
 .btn-premium {
-  padding: 6px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
   border: none;
   transition: all 0.18s;
+  white-space: nowrap;
 }
 
 .btn-ghost {
@@ -101,6 +110,25 @@ nav {
 .btn-premium:hover,
 .btn-ghost:hover {
   background: var(--accent2);
+}
+
+.user-greeting {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.nav-link {
+  font-size: 0.75rem;
+  color: var(--text);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.nav-link.active {
+  background: var(--surface2);
 }
 
 .filters-bar {
@@ -741,11 +769,38 @@ footer {
   .similar-grid {
     grid-template-columns: 1fr;
   }
-  nav {
-    padding: 0 1rem;
+}
+
+@media (max-width: 480px) {
+  .logo {
+    font-size: 1rem;
   }
   .search-bar {
-    width: 160px;
+    font-size: 0.8rem;
+    padding: 6px 10px 6px 32px;
+  }
+  .search-wrap svg {
+    left: 8px;
+    width: 14px;
+    height: 14px;
+  }
+  .btn,
+  .btn-premium {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+  }
+  .user-greeting {
+    display: none;
+  }
+  .nav-link {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+  }
+  main {
+    padding: 1rem;
+  }
+  .filters-bar {
+    padding: 0 1rem;
   }
 }
 
