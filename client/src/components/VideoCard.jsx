@@ -125,16 +125,18 @@ export default function VideoCard({ video, variant = 'grid' }) {
     >
       <div className="thumb-wrap">
         <img src={video.thumbnailUrl || video.thumb} alt={video.title} loading="lazy" />
-        <video
-          ref={videoRef}
-          src={video.previewUrl || video.preview || video.videoUrl}
-          muted
-          loop={false}
-          playsInline
-          preload="metadata"
-          onTimeUpdate={handleTimeUpdate}
-          style={{ pointerEvents: 'none' }}
-        />
+        {!touchDeviceRef.current && (
+          <video
+            ref={videoRef}
+            src={video.previewUrl || video.preview || video.videoUrl}
+            muted
+            loop={false}
+            playsInline
+            preload="metadata"
+            onTimeUpdate={handleTimeUpdate}
+            style={{ pointerEvents: 'none' }}
+          />
+        )}
         <div className="duration-badge">{formatDuration(video.duration)}</div>
         {video.premium && <div className="premium-ribbon">PREMIUM</div>}
         <div className="progress-bar">

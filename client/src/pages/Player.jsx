@@ -27,13 +27,18 @@ export default function Player() {
         const data = await fetchVideoById(id);
         setVideo(data);
         setLikes(data.likes || 0);
-        setIsLiked(user && data.likedBy?.includes(user.id));
-
-        await incrementVideoViews(id);
-        setVideo((current) => (current ? { ...current, views: (current.views || 0) + 1 } : current));
       } catch (error) {
         console.error('Error loading video:', error);
         navigate('/');
+        return;
+      }
+
+      // Increment views separately — don't redirect if this fails
+      try {
+        await incrementVideoViews(id);
+        setVideo((current) => (current ? { ...current, views: (current.views || 0) + 1 } : current));
+      } catch (error) {
+        console.error('Error incrementing views:', error);
       }
     };
 
@@ -59,7 +64,16 @@ export default function Player() {
     loadVideo();
     loadComments();
     loadSimilarVideos();
-  }, [id, user, navigate]);
+  }, [id, navigate]);
+
+  // Update like state when user auth resolves or changes
+  useEffect(() => {
+    if (video && user) {
+      setIsLiked(video.likedBy?.includes(user.id));
+    } else {
+      setIsLiked(false);
+    }
+  }, [video, user]);
 
   const filteredSimilar = useMemo(() => similarVideos.slice(0, 10), [similarVideos]);
 
@@ -151,7 +165,7 @@ export default function Player() {
               <div className="video-stats-row">
                 <span className="stat">{video.views?.toLocaleString?.() || 0} views</span>
                 <span className="stat">·</span>
-                <span className="stat">{new Date(video.createdAt).toLocaleDateString()}</span>
+                <span className="stat">{video.uploadedAt ? new Date(video.uploadedAt.seconds ? video.uploadedAt.toDate() : video.uploadedAt).toLocaleDateString() : ''}</span>
               </div>
             </div>
             {user?.role === 'admin' && (
@@ -218,7 +232,7 @@ export default function Player() {
                   <div className="comment-header">
                     <span className="comment-user">{comment.userName}</span>
                     <span className="comment-date">
-                      {new Date(comment.createdAt).toLocaleDateString()}
+                      {comment.timestamp ? new Date(comment.timestamp.seconds ? comment.timestamp.toDate() : comment.timestamp).toLocaleDateString() : ''}
                     </span>
                   </div>
                   <p className="comment-text">{comment.text}</p>
