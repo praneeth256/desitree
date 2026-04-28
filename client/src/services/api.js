@@ -103,8 +103,6 @@ export async function fetchVideoById(id) {
 }
 
 export async function incrementVideoViews(id) {
-  await ensureAuth();
-
   const docRef = doc(db, 'videos', id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
@@ -182,7 +180,6 @@ export async function fetchComments(id) {
 }
 
 export async function submitContactForm({ name, email, subject, message }) {
-  await ensureAuth();
   const contactData = {
     name,
     email,
