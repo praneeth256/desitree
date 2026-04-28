@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, addDoc, deleteDoc, query, orderBy, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 
@@ -103,21 +103,13 @@ export async function fetchVideoById(id) {
 }
 
 export async function incrementVideoViews(id) {
-  try {
-    await ensureAuth();
-  } catch (authError) {
-    console.error('Anonymous auth failed:', authError);
-  }
+  await ensureAuth();
 
   const docRef = doc(db, 'videos', id);
-  try {
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const currentViews = docSnap.data().views || 0;
-      await updateDoc(docRef, { views: currentViews + 1 });
-    }
-  } catch (error) {
-    console.error('Error incrementing views:', error);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const currentViews = docSnap.data().views || 0;
+    await updateDoc(docRef, { views: currentViews + 1 });
   }
 }
 
@@ -190,6 +182,7 @@ export async function fetchComments(id) {
 }
 
 export async function submitContactForm({ name, email, subject, message }) {
+  await ensureAuth();
   const contactData = {
     name,
     email,
@@ -199,6 +192,27 @@ export async function submitContactForm({ name, email, subject, message }) {
   };
   const docRef = await addDoc(collection(db, 'contacts'), contactData);
   return { id: docRef.id, ...contactData };
+}
+
+export function subscribeToVideos(category, callback) {
+  let q;
+  const specialFilters = ['most-viewed', 'most-liked'];
+  if (category && category !== 'All' && !specialFilters.includes(category)) {
+    q = query(collection(db, 'videos'), where('category', '==', category));
+  } else {
+    q = query(collection(db, 'videos'), orderBy('uploadedAt', 'desc'));
+  }
+
+  return onSnapshot(q, (querySnapshot) => {
+    const videos = [];
+    querySnapshot.forEach((doc) => {
+      videos.push({ id: doc.id, ...doc.data() });
+    });
+    callback(videos);
+  }, (error) => {
+    console.error('Snapshot error:', error);
+    callback([]);
+  });
 }
 
 export async function fetchContacts() {

@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
-import { fetchVideos } from '../services/api';
-import { sampleVideos } from '../data/videos';
+import { subscribeToVideos } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const FILTERS = [
@@ -27,17 +26,11 @@ export default function Home() {
   const VIDEOS_PER_PAGE = 16;
 
   useEffect(() => {
-    const loadVideos = async () => {
-      try {
-        const category = selectedFilter === 'all' ? null : selectedFilter;
-        const data = await fetchVideos(category);
-        setVideos(data);
-      } catch (error) {
-        console.error('Failed to fetch videos:', error);
-        setVideos([]);
-      }
-    };
-    loadVideos();
+    const category = selectedFilter === 'all' ? null : selectedFilter;
+    const unsubscribe = subscribeToVideos(category, (data) => {
+      setVideos(data);
+    });
+    return () => unsubscribe();
   }, [selectedFilter]);
 
   useEffect(() => {

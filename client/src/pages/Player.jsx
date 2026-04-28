@@ -9,6 +9,27 @@ import { fetchVideoById, fetchVideos, incrementVideoViews, deleteVideo, likeVide
 import { useAuth } from '../contexts/AuthContext';
 import { formatViews } from '../utils/formatViews';
 
+function hasViewedThisSession(videoId) {
+  try {
+    const viewed = JSON.parse(sessionStorage.getItem('viewedVideos') || '[]');
+    return viewed.includes(videoId);
+  } catch {
+    return false;
+  }
+}
+
+function markViewedThisSession(videoId) {
+  try {
+    const viewed = JSON.parse(sessionStorage.getItem('viewedVideos') || '[]');
+    if (!viewed.includes(videoId)) {
+      viewed.push(videoId);
+      sessionStorage.setItem('viewedVideos', JSON.stringify(viewed));
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export default function Player() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -36,11 +57,14 @@ export default function Player() {
         return;
       }
 
-      try {
-        await incrementVideoViews(id);
-        setVideo((current) => (current ? { ...current, views: (current.views || 0) + 1 } : current));
-      } catch (error) {
-        console.error('Error incrementing views:', error);
+      if (!hasViewedThisSession(id)) {
+        try {
+          await incrementVideoViews(id);
+          setVideo((current) => (current ? { ...current, views: (current.views || 0) + 1 } : current));
+          markViewedThisSession(id);
+        } catch (error) {
+          console.error('Error incrementing views:', error);
+        }
       }
     };
 
