@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchVideos } from '../services/api';
 
-export default function Navigation({ search, onSearch, showAdmin = false }) {
+export default function Navigation({ search = '', onSearch, showAdmin = false }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState([]);
@@ -25,7 +25,7 @@ export default function Navigation({ search, onSearch, showAdmin = false }) {
   }, []);
 
   useEffect(() => {
-    const trimmed = search.trim().toLowerCase();
+    const trimmed = (search || '').trim().toLowerCase();
     if (!trimmed) {
       setSuggestions([]);
       return;
@@ -48,7 +48,7 @@ export default function Navigation({ search, onSearch, showAdmin = false }) {
 
   const handleSearchSubmit = useCallback(() => {
     setShowSuggestions(false);
-    if (search.trim()) {
+    if ((search || '').trim()) {
       navigate(`/?search=${encodeURIComponent(search.trim())}`);
     }
   }, [search, navigate]);
