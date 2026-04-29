@@ -180,6 +180,21 @@ export async function addComment(id, text) {
   throw new Error('Video not found');
 }
 
+export function subscribeToComments(videoId, callback) {
+  const docRef = doc(db, 'videos', videoId);
+  
+  return onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data().comments || []);
+    } else {
+      callback([]);
+    }
+  }, (error) => {
+    console.error('Comments snapshot error:', error);
+    callback([]);
+  });
+}
+
 export async function fetchComments(id) {
   const docRef = doc(db, 'videos', id);
   const docSnap = await getDoc(docRef);

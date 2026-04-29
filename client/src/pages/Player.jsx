@@ -5,7 +5,7 @@ import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import ShareModal from '../components/ShareModal';
-import { fetchVideoById, fetchVideos, incrementVideoViews, deleteVideo, likeVideo, addComment, fetchComments } from '../services/api';
+import { fetchVideoById, fetchVideos, incrementVideoViews, deleteVideo, likeVideo, addComment, subscribeToComments } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatViews } from '../utils/formatViews';
 
@@ -44,15 +44,6 @@ export default function Player() {
       }
     };
 
-    const loadComments = async () => {
-      try {
-        const commentsData = await fetchComments(id);
-        setComments(commentsData);
-      } catch (error) {
-        console.error('Error loading comments:', error);
-      }
-    };
-
     const loadSimilarVideos = async () => {
       try {
         const allVideos = await fetchVideos();
@@ -63,9 +54,16 @@ export default function Player() {
       }
     };
 
+    const unsubscribeComments = subscribeToComments(id, (commentsData) => {
+      setComments(commentsData);
+    });
+
     loadVideo();
-    loadComments();
     loadSimilarVideos();
+
+    return () => {
+      if (unsubscribeComments) unsubscribeComments();
+    };
   }, [id, navigate]);
 
   useEffect(() => {
