@@ -102,16 +102,15 @@ export default function Player() {
     }
   };
 
-  const handleAddComment = async (e) => {
+  const handleAddComment = async (e, parentCommentId = null) => {
     e.preventDefault();
     e.stopPropagation();
     if (!commentText.trim()) return;
 
     try {
-      await addComment(id, commentText);
+      await addComment(id, commentText, parentCommentId);
       setCommentText('');
       setReplyingTo(null);
-      // No need to manually update comments - subscribeToComments handles it in real-time
     } catch (error) {
       console.error('Comment failed:', error);
       alert('Failed to post comment. Please try again.');
@@ -165,12 +164,23 @@ export default function Player() {
           </div>
         </div>
 
-        <div className="player-wrap">
-          {video.videoUrl ? (
-            <CustomVideoPlayer src={video.videoUrl} poster={video.thumbnailUrl || video.previewUrl} />
-          ) : (
-            <div className="player-error">Video URL not available</div>
-          )}
+        <div className="player-layout">
+          <div className="player-main">
+            <div className="player-wrap">
+              {video.videoUrl ? (
+                <CustomVideoPlayer src={video.videoUrl} poster={video.thumbnailUrl || video.previewUrl} />
+              ) : (
+                <div className="player-error">Video URL not available</div>
+              )}
+            </div>
+          </div>
+          {/* Announcement / Ad panel — reserve space for future promotions */}
+          <aside className="player-aside">
+            <div className="aside-announce">
+              <span className="aside-announce-label">Announcements</span>
+              <p className="aside-announce-text">Stay tuned for updates, promotions &amp; exclusive content from DesiTree!</p>
+            </div>
+          </aside>
         </div>
 
         <div className="video-info-block">
@@ -222,29 +232,52 @@ export default function Player() {
             </form>
 
             <div className="comments-list">
-              {comments.map((comment, index) => (
-                <div key={index} className="comment" style={{marginLeft: comment.parentId ? '40px' : '0', opacity: replyingTo === comment.id ? 0.5 : 1}}>
+              {/* Top-level comments only */}
+              {comments.filter(c => !c.parentCommentId).map((comment, index) => (
+                <div key={comment.id || index} className="comment">
                   <div className="comment-header">
-                    <span className="comment-user">{comment?.userName || comment?.user || 'Anonymous'}</span>
+                    <span className={`comment-user${comment.isAdmin ? ' comment-user--admin' : ''}`}>
+                      {comment.isAdmin && <span className="admin-badge">ADMIN</span>}
+                      {comment?.userName || comment?.user || 'Anonymous'}
+                    </span>
                     <span className="comment-date">
                       {comment?.timestamp ? new Date(comment.timestamp.seconds ? comment.timestamp.toDate() : comment.timestamp).toLocaleDateString() : ''}
                     </span>
-                    <button 
+                    <button
                       className="reply-btn"
                       onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
                     >
-                      Reply
+                      {replyingTo === comment.id ? 'Cancel' : 'Reply'}
                     </button>
                   </div>
                   <p className="comment-text">{comment?.text || ''}</p>
+
+                  {/* Nested replies for this comment */}
+                  {comments.filter(r => r.parentCommentId === comment.id).map((reply, ri) => (
+                    <div key={reply.id || ri} className="comment comment--reply">
+                      <div className="comment-header">
+                        <span className={`comment-user${reply.isAdmin ? ' comment-user--admin' : ''}`}>
+                          {reply.isAdmin && <span className="admin-badge">ADMIN</span>}
+                          {reply?.userName || 'Anonymous'}
+                        </span>
+                        <span className="comment-date">
+                          {reply?.timestamp ? new Date(reply.timestamp.seconds ? reply.timestamp.toDate() : reply.timestamp).toLocaleDateString() : ''}
+                        </span>
+                      </div>
+                      <p className="comment-text">{reply?.text || ''}</p>
+                    </div>
+                  ))}
+
+                  {/* Reply input for this comment */}
                   {replyingTo === comment.id && (
-                    <form onSubmit={handleAddComment} className="reply-form">
+                    <form onSubmit={(e) => handleAddComment(e, comment.id)} className="reply-form">
                       <input
                         type="text"
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
-                        placeholder={`Replying to ${comment.userName || comment.user || 'Anonymous'}...`}
+                        placeholder={`Replying to ${comment.userName || 'Anonymous'}...`}
                         className="comment-input"
+                        autoFocus
                       />
                       <button type="submit" className="btn btn-primary btn-small">
                         Reply

@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchVideos } from '../services/api';
 
-export default function Navigation({ search = '', onSearch, showAdmin = false }) {
+export default function Navigation({ search = '', onSearch = () => {}, showAdmin = false }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState([]);
@@ -69,7 +69,7 @@ export default function Navigation({ search = '', onSearch, showAdmin = false })
     e.preventDefault();
     onSearch('');
     setShowSuggestions(false);
-    navigate('/');
+    navigate('/', { state: { resetFilters: true } });
   };
 
   return (

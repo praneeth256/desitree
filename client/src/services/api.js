@@ -154,28 +154,42 @@ export async function likeVideo(id) {
   throw new Error('Video not found');
 }
 
-export async function addComment(id, text) {
+export async function addComment(id, text, parentCommentId = null) {
   await ensureAuth();
   const docRef = doc(db, 'videos', id);
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
     const currentComments = docSnap.data().comments || [];
-    const adjectives = ['Quick', 'Shadow', 'Silent', 'Night', 'Mystery', 'Phantom', 'Star', 'Cloud', 'Void', 'Moon', 'Frost', 'Neon', 'Code', 'Pixel', 'Byte', 'Dark', 'Storm', 'Ice', 'Fire', 'Ghost'];
-    const nouns = ['Ninja', 'Fox', 'Walker', 'Ghost', 'Owl', 'User', 'Viewer', 'Pilot', 'Gazer', 'Drifter', 'Coder', 'Spectre', 'Phantom', 'Byte', 'Pixel', 'Ninja', 'Coder', 'Pixel', 'Byte', 'Spectre'];
-    const randomNum = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
-    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
-    const randomName = `${adj}${noun}${randomNum}`;
+
+    // Use admin name if admin, else generate random name
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+    const isAdmin = auth.currentUser?.email === adminEmail;
+
+    let userName;
+    if (isAdmin) {
+      userName = 'DesiTree Admin';
+    } else {
+      const adjectives = ['Quick', 'Shadow', 'Silent', 'Night', 'Mystery', 'Phantom', 'Star', 'Cloud', 'Void', 'Moon', 'Frost', 'Neon', 'Code', 'Pixel', 'Byte', 'Dark', 'Storm', 'Ice', 'Fire', 'Ghost'];
+      const nouns = ['Ninja', 'Fox', 'Walker', 'Ghost', 'Owl', 'User', 'Viewer', 'Pilot', 'Gazer', 'Drifter', 'Coder', 'Spectre', 'Phantom', 'Byte', 'Pixel', 'Ninja', 'Coder', 'Pixel', 'Byte', 'Spectre'];
+      const randomNum = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+      const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const noun = nouns[Math.floor(Math.random() * nouns.length)];
+      userName = `${adj}${noun}${randomNum}`;
+    }
+
     const newComment = {
+      id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       text,
-      userName: randomName,
+      userName,
+      isAdmin,
+      parentCommentId,
       timestamp: new Date()
     };
     await updateDoc(docRef, {
       comments: [...currentComments, newComment]
     });
-    return newComment;  // Return for optimistic UI
+    return newComment;
   }
   throw new Error('Video not found');
 }

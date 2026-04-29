@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
@@ -22,8 +23,18 @@ export default function Home() {
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   const VIDEOS_PER_PAGE = 16;
+
+  // Reset filter and search when navigating to home (e.g. logo click)
+  useEffect(() => {
+    if (location.state?.resetFilters) {
+      setSelectedFilter('all');
+      setSearchTerm('');
+      setCurrentPage(1);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const category = selectedFilter === 'all' ? null : selectedFilter;
