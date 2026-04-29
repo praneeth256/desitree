@@ -160,13 +160,12 @@ export async function addComment(id, text) {
 
   if (docSnap.exists()) {
     const currentComments = docSnap.data().comments || [];
-    const RANDOM_NAMES = [
-      'Anonymous Ninja', 'QuickFox', 'ShadowWalker', 'SilentGhost', 'NightOwl', 
-      'MysteryUser', 'PhantomViewer', 'EchoPilot', 'StarGazer', 'CloudDrifter',
-      'VoidWalker', 'MoonWatcher', 'FrostByte', 'NeonSpectre', 'CodePhantom',
-      'PixelGhost', 'ByteNinja', 'ShadowCoder', 'DarkPixel', 'SilentByte'
-    ];
-    const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+    const adjectives = ['Quick', 'Shadow', 'Silent', 'Night', 'Mystery', 'Phantom', 'Star', 'Cloud', 'Void', 'Moon', 'Frost', 'Neon', 'Code', 'Pixel', 'Byte', 'Dark', 'Storm', 'Ice', 'Fire', 'Ghost'];
+    const nouns = ['Ninja', 'Fox', 'Walker', 'Ghost', 'Owl', 'User', 'Viewer', 'Pilot', 'Gazer', 'Drifter', 'Coder', 'Spectre', 'Phantom', 'Byte', 'Pixel', 'Ninja', 'Coder', 'Pixel', 'Byte', 'Spectre'];
+    const randomNum = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const randomName = `${adj}${noun}${randomNum}`;
     const newComment = {
       text,
       userName: randomName,

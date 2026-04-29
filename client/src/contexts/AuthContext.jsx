@@ -13,15 +13,14 @@ export function AuthProvider({ children }) {
       if (firebaseUser) {
         // Check if user is admin
         const isAdmin = firebaseUser.email === import.meta.env.VITE_ADMIN_EMAIL;
-        // Generate random name for anonymous users
+        // Generate unlimited random name for anonymous users
         const getRandomName = () => {
-          const RANDOM_NAMES = [
-            'Anonymous Ninja', 'QuickFox', 'ShadowWalker', 'SilentGhost', 'NightOwl', 
-            'MysteryUser', 'PhantomViewer', 'EchoPilot', 'StarGazer', 'CloudDrifter',
-            'VoidWalker', 'MoonWatcher', 'FrostByte', 'NeonSpectre', 'CodePhantom',
-            'PixelGhost', 'ByteNinja', 'ShadowCoder', 'DarkPixel', 'SilentByte'
-          ];
-          return RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+          const adjectives = ['Quick', 'Shadow', 'Silent', 'Night', 'Mystery', 'Phantom', 'Star', 'Cloud', 'Void', 'Moon', 'Frost', 'Neon', 'Code', 'Pixel', 'Byte', 'Dark', 'Storm', 'Ice', 'Fire', 'Ghost'];
+          const nouns = ['Ninja', 'Fox', 'Walker', 'Ghost', 'Owl', 'User', 'Viewer', 'Pilot', 'Gazer', 'Drifter', 'Coder', 'Spectre', 'Phantom', 'Byte', 'Pixel', 'Ninja', 'Coder', 'Pixel', 'Byte', 'Spectre'];
+          const randomNum = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+          const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+          const noun = nouns[Math.floor(Math.random() * nouns.length)];
+          return `${adj}${noun}${randomNum}`;
         };
         const userData = {
           id: firebaseUser.uid,
