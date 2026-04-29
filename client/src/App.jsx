@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './contexts/AuthContext';
 import Home from './pages/Home';
 import Player from './pages/Player';
@@ -25,6 +26,7 @@ function App() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={<Navigate replace to="/" />} />
         </Routes>
+        <Analytics />
       </BrowserRouter>
     </AuthProvider>
   );
