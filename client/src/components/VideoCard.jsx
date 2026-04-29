@@ -103,6 +103,7 @@ export default function VideoCard({ video, variant = 'grid' }) {
 
   const handleClick = () => {
     navigate(`/player/${video._id || video.id}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
