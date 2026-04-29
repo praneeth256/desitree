@@ -15,11 +15,12 @@ service cloud.firestore {
         && request.resource.data.views == resource.data.views + 1;
     }
 
-    // Comments - anyone authenticated can add, anyone can read
-    match /videos/{videoId}/comments/{commentId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-    }
+    // Comments - anyone can add/read (stored as array in video doc)
+    match /videos/{videoId} {
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
+        && request.resource.data.comments.size() == resource.data.comments.size() + 1
+        && request.resource.data.comments[request.resource.data.comments.size() - 1].text == request.resource.data.text;
 
     // Contacts / DMCA submissions - any authenticated user can submit
     // Any authenticated user can read (client-side admin check protects UI)
