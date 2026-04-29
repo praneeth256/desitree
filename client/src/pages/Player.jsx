@@ -18,6 +18,7 @@ export default function Player() {
   const [searchTerm, setSearchTerm] = useState('');
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likes, setLikes] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -220,15 +221,35 @@ export default function Player() {
             </form>
 
             <div className="comments-list">
-{comments.map((comment, index) => (
-                <div key={index} className="comment">
+              {comments.map((comment, index) => (
+                <div key={index} className="comment" style={{marginLeft: comment.parentId ? '40px' : '0', opacity: replyingTo === comment.id ? 0.5 : 1}}>
                   <div className="comment-header">
                     <span className="comment-user">{comment?.userName || comment?.user || 'Anonymous'}</span>
                     <span className="comment-date">
                       {comment?.timestamp ? new Date(comment.timestamp.seconds ? comment.timestamp.toDate() : comment.timestamp).toLocaleDateString() : ''}
                     </span>
+                    <button 
+                      className="reply-btn"
+                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                    >
+                      Reply
+                    </button>
                   </div>
                   <p className="comment-text">{comment?.text || ''}</p>
+                  {replyingTo === comment.id && (
+                    <form onSubmit={handleAddComment} className="reply-form">
+                      <input
+                        type="text"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder={`Replying to ${comment.userName || comment.user || 'Anonymous'}...`}
+                        className="comment-input"
+                      />
+                      <button type="submit" className="btn btn-primary btn-small">
+                        Reply
+                      </button>
+                    </form>
+                  )}
                 </div>
               ))}
             </div>
