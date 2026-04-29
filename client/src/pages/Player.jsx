@@ -222,15 +222,15 @@ export default function Player() {
             </form>
 
             <div className="comments-list">
-              {comments.map((comment, index) => (
+{comments.map((comment, index) => (
                 <div key={index} className="comment">
                   <div className="comment-header">
-                    <span className="comment-user">{comment.userName}</span>
+                    <span className="comment-user">{comment?.userName || comment?.user || 'Anonymous'}</span>
                     <span className="comment-date">
-                      {comment.timestamp ? new Date(comment.timestamp.seconds ? comment.timestamp.toDate() : comment.timestamp).toLocaleDateString() : ''}
+                      {comment?.timestamp ? new Date(comment.timestamp.seconds ? comment.timestamp.toDate() : comment.timestamp).toLocaleDateString() : ''}
                     </span>
                   </div>
-                  <p className="comment-text">{comment.text}</p>
+                  <p className="comment-text">{comment?.text || ''}</p>
                 </div>
               ))}
             </div>
