@@ -208,7 +208,7 @@ export default function Player() {
 
           <div className="comments-section">
             <h3>Comments ({comments.length})</h3>
-            <form onSubmit={handleAddComment} className="comment-form">
+            <form onSubmit={handleAddComment} className="comment-form" style={{position: 'relative', zIndex: 10}}>
               <input
                 type="text"
                 value={commentText}
