@@ -175,7 +175,9 @@ export async function addComment(id, text) {
     await updateDoc(docRef, {
       comments: [...currentComments, newComment]
     });
+    return newComment;  // Return for optimistic UI
   }
+  throw new Error('Video not found');
 }
 
 export async function fetchComments(id) {
