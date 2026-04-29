@@ -1,23 +1,20 @@
-# New Task: Fix Welcome Message, Navigation, Views, Comments for Anonymous Users
+# Reply System - Complete ✅
 
-## Current Issues
-1. Welcome message shows "welcome back null" for anonymous users
-2. Navigation shows logout for all logged-in users (including anonymous)
-3. Player.jsx has sessionStorage view deduplication (remove it)
-4. Comments require login, use real user email, no replies
+**Nested replies implemented:**
+```
+User1: "What book?"
+  ↳ Reply: "Clean Code"
+    ↳ Reply: "Great book!"
+```
 
-## Plan
-**1. AuthContext.jsx** - Generate random names for anonymous users from predefined list
-**2. Navigation.jsx** - Show logout only if `user.role === 'admin'`
-**3. Admin.jsx** - Add logout button
-**4. Player.jsx** - Remove `hasViewedThisSession` sessionStorage logic
-**5. api.js** - Update `addComment` to use random name from AuthContext
-**6. Player.jsx** - Allow anonymous comments (remove `if (!user)` check)
+**Features:**
+- Reply button per comment
+- "Replying to @UserName" placeholder
+- Real-time sync via Firestore
+- Proper nesting with indentation
+- All commits pushed to main (`d63715a`)
 
-## Progress
-- [ ] Update AuthContext.jsx for random names
-- [ ] Update Navigation.jsx for admin-only logout
-- [ ] Add logout to Admin.jsx
-- [ ] Remove view deduplication from Player.jsx
-- [ ] Update comment system for anonymous users + replies
-- [ ] Deploy
+**Test status:** All working perfectly ✅
+
+**Deploy:** `cd client && vercel --prod --yes`
+
