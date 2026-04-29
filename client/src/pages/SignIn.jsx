@@ -23,8 +23,9 @@ export default function SignIn() {
     setError('');
 
     try {
-      await login(form.email, form.password);
-      navigate('/admin');
+      const firebaseUser = await login(form.email, form.password);
+      const isAdmin = form.email === import.meta.env.VITE_ADMIN_EMAIL;
+      navigate(isAdmin ? '/admin' : '/');
     } catch (error) {
       setError(error.message || 'Login failed');
     } finally {
@@ -36,8 +37,9 @@ export default function SignIn() {
     setLoading(true);
     setError('');
     try {
-      await loginWithGoogle();
-      navigate('/admin');
+      const result = await loginWithGoogle();
+      const isAdmin = result.email === import.meta.env.VITE_ADMIN_EMAIL;
+      navigate(isAdmin ? '/admin' : '/');
     } catch (error) {
       setError(error.message || 'Google sign in failed');
     } finally {

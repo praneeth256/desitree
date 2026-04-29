@@ -108,9 +108,10 @@ export default function Player() {
     if (!commentText.trim()) return;
 
     try {
-      const newComment = await addComment(id, commentText);
-      setComments(prev => [...prev, newComment]);
+      await addComment(id, commentText);
       setCommentText('');
+      setReplyingTo(null);
+      // No need to manually update comments - subscribeToComments handles it in real-time
     } catch (error) {
       console.error('Comment failed:', error);
       alert('Failed to post comment. Please try again.');

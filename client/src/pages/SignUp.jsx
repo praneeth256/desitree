@@ -11,7 +11,7 @@ export default function SignUp() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (field) => (event) => {
@@ -36,11 +36,7 @@ export default function SignUp() {
     setError('');
 
     try {
-      await register({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-      });
+      await register(form.email, form.password);
       navigate('/');
     } catch (error) {
       setError(error.message || 'Registration failed');
@@ -49,10 +45,17 @@ export default function SignUp() {
     }
   };
 
-  const handleGoogleSignUp = () => {
-    // Redirect to Google OAuth with current origin
-    const redirectUrl = encodeURIComponent(window.location.origin);
-    window.location.href = `http://localhost:5000/api/auth/google?redirect=${redirectUrl}`;
+  const handleGoogleSignUp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await loginWithGoogle();
+      navigate('/');
+    } catch (error) {
+      setError(error.message || 'Google sign up failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
