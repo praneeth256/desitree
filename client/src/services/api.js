@@ -155,6 +155,7 @@ export async function likeVideo(id) {
 }
 
 export async function addComment(id, text) {
+  await ensureAuth();
   const docRef = doc(db, 'videos', id);
   const docSnap = await getDoc(docRef);
 
