@@ -105,14 +105,16 @@ export default function Player() {
 
   const handleAddComment = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!commentText.trim()) return;
 
     try {
       const newComment = await addComment(id, commentText);
-      setComments([...comments, newComment]);
+      setComments(prev => [...prev, newComment]);
       setCommentText('');
     } catch (error) {
       console.error('Comment failed:', error);
+      alert('Failed to post comment. Please try again.');
     }
   };
 
