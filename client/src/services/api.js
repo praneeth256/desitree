@@ -117,6 +117,28 @@ export async function deleteVideo(id) {
   await deleteDoc(doc(db, 'videos', id));
 }
 
+export async function updateVideoMetadata(id, { title, description, category, thumbnailFile }) {
+  const docRef = doc(db, 'videos', id);
+  const updates = { title, description, category };
+
+  if (thumbnailFile) {
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const formData = new FormData();
+    formData.append('file', thumbnailFile);
+    formData.append('upload_preset', 'desitree_videos');
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Thumbnail upload failed');
+    const data = await res.json();
+    updates.thumbnailUrl = data.secure_url;
+  }
+
+  await updateDoc(docRef, updates);
+  return updates;
+}
+
 export async function likeVideo(id) {
   const docRef = doc(db, 'videos', id);
   const docSnap = await getDoc(docRef);
