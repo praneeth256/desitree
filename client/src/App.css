@@ -476,19 +476,15 @@ footer {
 
 .player-wrap {
   background: #000;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
-  aspect-ratio: 16 / 9;
+  width: 100%;
   margin-bottom: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .player-wrap > * {
   width: 100%;
-  height: 100%;
 }
 
 .player-error {
@@ -1547,6 +1543,17 @@ footer {
 @media (max-width: 900px) {
   .player-layout {
     flex-direction: column;
+  }
+  .player-main {
+    width: 100%;
+  }
+  .player-wrap {
+    width: 100%;
+    /* Enforce 16:9 on mobile so player never collapses */
+    position: relative;
+    aspect-ratio: 16 / 9;
+    min-height: 180px;
+    overflow: visible;
   }
   .player-aside {
     width: 100%;

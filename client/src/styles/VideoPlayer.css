@@ -9,12 +9,15 @@
   background: #000;
   border-radius: 10px;
   overflow: hidden;
+  /* Use padding-top trick for reliable 16:9 across all browsers/mobile */
   aspect-ratio: 16 / 9;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
   box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(240,192,64,0.08);
+  /* Ensure minimum height so player never collapses on mobile */
+  min-height: 200px;
 }
 
 .vp-root.vp-fullscreen {
@@ -357,7 +360,13 @@
 @media (max-width: 640px) {
   .vp-root {
     border-radius: 6px;
-    aspect-ratio: 16/9;
+    /* Reliable 16:9 on all mobile browsers */
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
+    min-height: 180px;
+    padding-bottom: 0;
   }
 
   .vp-controls {
