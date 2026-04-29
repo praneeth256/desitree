@@ -9,27 +9,6 @@ import { fetchVideoById, fetchVideos, incrementVideoViews, deleteVideo, likeVide
 import { useAuth } from '../contexts/AuthContext';
 import { formatViews } from '../utils/formatViews';
 
-function hasViewedThisSession(videoId) {
-  try {
-    const viewed = JSON.parse(sessionStorage.getItem('viewedVideos') || '[]');
-    return viewed.includes(videoId);
-  } catch {
-    return false;
-  }
-}
-
-function markViewedThisSession(videoId) {
-  try {
-    const viewed = JSON.parse(sessionStorage.getItem('viewedVideos') || '[]');
-    if (!viewed.includes(videoId)) {
-      viewed.push(videoId);
-      sessionStorage.setItem('viewedVideos', JSON.stringify(viewed));
-    }
-  } catch {
-    // ignore
-  }
-}
-
 export default function Player() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -57,14 +36,11 @@ export default function Player() {
         return;
       }
 
-      if (!hasViewedThisSession(id)) {
-        try {
-          await incrementVideoViews(id);
-          setVideo((current) => (current ? { ...current, views: (current.views || 0) + 1 } : current));
-          markViewedThisSession(id);
-        } catch (error) {
-          console.error('Error incrementing views:', error);
-        }
+      try {
+        await incrementVideoViews(id);
+        setVideo((current) => (current ? { ...current, views: (current.views || 0) + 1 } : current));
+      } catch (error) {
+        console.error('Error incrementing views:', error);
       }
     };
 
@@ -129,10 +105,6 @@ export default function Player() {
 
   const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!user) {
-      alert('Please login to comment');
-      return;
-    }
     if (!commentText.trim()) return;
 
     try {
@@ -234,22 +206,18 @@ export default function Player() {
 
           <div className="comments-section">
             <h3>Comments ({comments.length})</h3>
-            {user ? (
-              <form onSubmit={handleAddComment} className="comment-form">
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Add a comment..."
-                  className="comment-input"
-                />
-                <button type="submit" className="btn btn-primary">
-                  Comment
-                </button>
-              </form>
-            ) : (
-              <p className="login-prompt">Please <a href="/signin">sign in</a> to comment</p>
-            )}
+            <form onSubmit={handleAddComment} className="comment-form">
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Add a comment..."
+                className="comment-input"
+              />
+              <button type="submit" className="btn btn-primary">
+                Comment
+              </button>
+            </form>
 
             <div className="comments-list">
               {comments.map((comment, index) => (

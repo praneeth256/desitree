@@ -1,13 +1,23 @@
-# Fix Contact Form and View Counter Issues
+# New Task: Fix Welcome Message, Navigation, Views, Comments for Anonymous Users
 
-## Issues
-1. Contact/DMCA form fails with "Failed to send message" - `submitContactForm` doesn't call `ensureAuth()` before writing to Firestore, violating the `request.auth != null` rule.
-2. View counter appears to increase on Player but reverts on Home - `incrementVideoViews` silently swallows all errors, so Player optimistically updates UI even when Firestore write fails. Home uses stale one-time `getDocs` data.
+## Current Issues
+1. Welcome message shows "welcome back null" for anonymous users
+2. Navigation shows logout for all logged-in users (including anonymous)
+3. Player.jsx has sessionStorage view deduplication (remove it)
+4. Comments require login, use real user email, no replies
 
-## Plan & Progress
+## Plan
+**1. AuthContext.jsx** - Generate random names for anonymous users from predefined list
+**2. Navigation.jsx** - Show logout only if `user.role === 'admin'`
+**3. Admin.jsx** - Add logout button
+**4. Player.jsx** - Remove `hasViewedThisSession` sessionStorage logic
+**5. api.js** - Update `addComment` to use random name from AuthContext
+**6. Player.jsx** - Allow anonymous comments (remove `if (!user)` check)
 
-- [x] Fix `api.js`: Add `ensureAuth()` to `submitContactForm`, make `incrementVideoViews` propagate errors
-- [x] Fix `Player.jsx`: Only optimistically update views on success, add sessionStorage deduplication
-- [x] Fix `Home.jsx`: Switch to Firestore `onSnapshot` real-time listener for live view counts
-- [x] Test and verify (build passes successfully)
-
+## Progress
+- [ ] Update AuthContext.jsx for random names
+- [ ] Update Navigation.jsx for admin-only logout
+- [ ] Add logout to Admin.jsx
+- [ ] Remove view deduplication from Player.jsx
+- [ ] Update comment system for anonymous users + replies
+- [ ] Deploy

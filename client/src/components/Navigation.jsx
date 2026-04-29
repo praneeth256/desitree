@@ -123,10 +123,12 @@ export default function Navigation({ search = '', onSearch, showAdmin = false })
         {user?.role === 'admin' && (
           <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Admin</NavLink>
         )}
-        {user ? (
+{user ? (
           <>
             <span className="user-greeting">Hi, {user.name}</span>
-            <button className="btn btn-ghost" onClick={logout}>Logout</button>
+            {user.role === 'admin' && (
+              <button className="btn btn-ghost" onClick={logout}>Logout</button>
+            )}
           </>
         ) : (
           <>

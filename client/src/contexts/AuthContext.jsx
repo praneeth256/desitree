@@ -13,10 +13,20 @@ export function AuthProvider({ children }) {
       if (firebaseUser) {
         // Check if user is admin
         const isAdmin = firebaseUser.email === import.meta.env.VITE_ADMIN_EMAIL;
+        // Generate random name for anonymous users
+        const getRandomName = () => {
+          const RANDOM_NAMES = [
+            'Anonymous Ninja', 'QuickFox', 'ShadowWalker', 'SilentGhost', 'NightOwl', 
+            'MysteryUser', 'PhantomViewer', 'EchoPilot', 'StarGazer', 'CloudDrifter',
+            'VoidWalker', 'MoonWatcher', 'FrostByte', 'NeonSpectre', 'CodePhantom',
+            'PixelGhost', 'ByteNinja', 'ShadowCoder', 'DarkPixel', 'SilentByte'
+          ];
+          return RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+        };
         const userData = {
           id: firebaseUser.uid,
           email: firebaseUser.email,
-          name: firebaseUser.displayName || firebaseUser.email,
+          name: firebaseUser.displayName || firebaseUser.email || getRandomName(),
           role: isAdmin ? 'admin' : 'user'
         };
         setUser(userData);

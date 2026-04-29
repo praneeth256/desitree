@@ -26,7 +26,7 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [contacts, setContacts] = useState([]);
   const [contactsLoading, setContactsLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -149,6 +149,9 @@ export default function Admin() {
           {activeTab === 'messages' && (
             <>
               <h1>Messages / Reports</h1>
+              <button className="btn btn-ghost admin-logout" onClick={logout}>
+                Logout
+              </button>
               <p>All DMCA and contact submissions from users.</p>
               {contactsLoading ? (
                 <div className="loading-block">Loading messages...</div>

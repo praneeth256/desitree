@@ -160,9 +160,16 @@ export async function addComment(id, text) {
 
   if (docSnap.exists()) {
     const currentComments = docSnap.data().comments || [];
+    const RANDOM_NAMES = [
+      'Anonymous Ninja', 'QuickFox', 'ShadowWalker', 'SilentGhost', 'NightOwl', 
+      'MysteryUser', 'PhantomViewer', 'EchoPilot', 'StarGazer', 'CloudDrifter',
+      'VoidWalker', 'MoonWatcher', 'FrostByte', 'NeonSpectre', 'CodePhantom',
+      'PixelGhost', 'ByteNinja', 'ShadowCoder', 'DarkPixel', 'SilentByte'
+    ];
+    const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
     const newComment = {
       text,
-      user: auth.currentUser?.email || 'Anonymous',
+      userName: randomName,
       timestamp: new Date()
     };
     await updateDoc(docRef, {
