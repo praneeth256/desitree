@@ -1,29 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Videos - anyone can read
-    // Admin can create/delete (client-side check enforces this)
-    // Anyone can increment views only (by exactly 1)
+    // Videos - public read, auth write
     match /videos/{videoId} {
       allow read: if true;
-      allow create, delete: if request.auth != null;
-
-      // Allow view increment: only the 'views' field can change
-      allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
-        && request.resource.data.views == resource.data.views + 1;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null &&
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) &&
+         request.resource.data.views == resource.data.views + 1) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']) &&
+         request.resource.data.comments.size() == resource.data.comments.size() + 1) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy']));
+      allow delete: if request.auth != null && request.auth.token.role == 'admin';
     }
-
-    // Comments - anyone can add/read (stored as array in video doc)
-    match /videos/{videoId} {
-      allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
-        && request.resource.data.comments.size() == resource.data.comments.size() + 1
-        && request.resource.data.comments[request.resource.data.comments.size() - 1].text == request.resource.data.text;
-
-    // Contacts / DMCA submissions - any authenticated user can submit
-    // Any authenticated user can read (client-side admin check protects UI)
+    
+    // Contacts - auth read/write
     match /contacts/{contactId} {
       allow read, create: if request.auth != null;
     }
