@@ -2,93 +2,64 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatViews } from '../utils/formatViews';
 
-const PREVIEW_SEGMENTS = [0.1, 0.3, 0.5, 0.7];
-const SEGMENT_DURATION = 2; // seconds per key scene
+const PREVIEW_SEGMENTS  = [0.1, 0.3, 0.5, 0.7];
+const SEGMENT_DURATION  = 2;
+const isTouchDevice = () =>
+  typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-// Detect touch device once on mount
-const isTouchDevice = () => {
-  if (typeof window === 'undefined') return false;
-  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-};
-
-export default function VideoCard({ video, variant = 'grid' }) {
-  const navigate = useNavigate();
-  const videoRef = useRef(null);
-  const [progress, setProgress] = useState(0);
-  const [hovering, setHovering] = useState(false);
+export default function VideoCard({ video, variant = 'grid', currentPage = 1, currentFilter = 'all' }) {
+  const navigate        = useNavigate();
+  const videoRef        = useRef(null);
+  const [progress, setProgress]   = useState(0);
+  const [hovering, setHovering]   = useState(false);
   const segmentIndexRef = useRef(0);
-  const intervalRef = useRef(null);
-  const touchDeviceRef = useRef(isTouchDevice());
+  const intervalRef     = useRef(null);
+  const isTouch         = useRef(isTouchDevice());
 
-  const formatDuration = (seconds) => {
-    if (!seconds || isNaN(seconds)) return '0:00';
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    
-    if (hrs > 0) {
-      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const formatDuration = (s) => {
+    if (!s || isNaN(s)) return '';
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+    return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` : `${m}:${String(sec).padStart(2,'0')}`;
   };
 
-  const clearPreviewInterval = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+  const clearPreview = () => {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
   };
 
   const startKeyScenePreview = useCallback(() => {
     const vid = videoRef.current;
     if (!vid || !vid.duration || isNaN(vid.duration)) return;
-
     segmentIndexRef.current = 0;
-    const duration = vid.duration;
-
-    const jumpToSegment = () => {
-      const segmentPercent = PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length];
-      vid.currentTime = duration * segmentPercent;
-    };
-
-    jumpToSegment();
+    const dur = vid.duration;
+    const jump = () => { vid.currentTime = dur * PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length]; };
+    jump();
     vid.play().catch(() => {});
-
     intervalRef.current = setInterval(() => {
-      const segmentPercent = PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length];
-      const segmentStart = duration * segmentPercent;
-      
-      if (vid.currentTime >= segmentStart + SEGMENT_DURATION) {
+      const pct   = PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length];
+      const start = dur * pct;
+      if (vid.currentTime >= start + SEGMENT_DURATION) {
         segmentIndexRef.current += 1;
-        const nextSegmentPercent = PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length];
-        vid.currentTime = duration * nextSegmentPercent;
+        vid.currentTime = dur * PREVIEW_SEGMENTS[segmentIndexRef.current % PREVIEW_SEGMENTS.length];
       }
     }, 250);
   }, []);
 
   const handleMouseEnter = () => {
-    // Skip hover preview on touch devices to avoid interfering with taps
-    if (touchDeviceRef.current) return;
-    if (!videoRef.current) return;
+    if (isTouch.current || !videoRef.current) return;
     setHovering(true);
-    
     if (videoRef.current.readyState >= 1 && videoRef.current.duration) {
       startKeyScenePreview();
     } else {
-      const handleLoaded = () => {
-        startKeyScenePreview();
-        videoRef.current.removeEventListener('loadedmetadata', handleLoaded);
-      };
-      videoRef.current.addEventListener('loadedmetadata', handleLoaded);
+      const onLoaded = () => { startKeyScenePreview(); videoRef.current?.removeEventListener('loadedmetadata', onLoaded); };
+      videoRef.current.addEventListener('loadedmetadata', onLoaded);
       videoRef.current.preload = 'metadata';
       videoRef.current.load();
     }
   };
 
   const handleMouseLeave = () => {
-    if (touchDeviceRef.current) return;
-    if (!videoRef.current) return;
-    clearPreviewInterval();
+    if (isTouch.current || !videoRef.current) return;
+    clearPreview();
     videoRef.current.pause();
     videoRef.current.currentTime = 0;
     setProgress(0);
@@ -97,66 +68,51 @@ export default function VideoCard({ video, variant = 'grid' }) {
 
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
-    const percentage = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-    setProgress(Number.isNaN(percentage) ? 0 : percentage);
+    const pct = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+    setProgress(isNaN(pct) ? 0 : pct);
   };
 
   const handleClick = () => {
-    navigate(`/player/${video._id || video.id}`);
+    navigate(`/player/${video._id || video.id}`, {
+      state: { fromPage: currentPage, fromFilter: currentFilter }
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    return () => clearPreviewInterval();
-  }, []);
+  useEffect(() => () => clearPreview(), []);
 
   return (
     <div
-      className={`video-card ${variant}`}
+      className={`video-card ${variant}${hovering ? ' video-card--hover' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleClick();
-        }
-      }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
     >
       <div className="thumb-wrap">
         <img src={video.thumbnailUrl || video.thumb} alt={video.title} loading="lazy" />
-        {!touchDeviceRef.current && (
+        {!isTouch.current && (
           <video
             ref={videoRef}
             src={video.previewUrl || video.preview || video.videoUrl}
-            muted
-            loop={false}
-            playsInline
-            preload="metadata"
+            muted loop={false} playsInline preload="none"
             onTimeUpdate={handleTimeUpdate}
             style={{ pointerEvents: 'none' }}
           />
         )}
-        <div className="duration-badge">{formatDuration(video.duration)}</div>
+        {video.duration && <div className="duration-badge">{formatDuration(video.duration)}</div>}
         {video.premium && <div className="premium-ribbon">PREMIUM</div>}
-        <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${progress}%` }} />
-        </div>
+        <div className="progress-bar"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
       </div>
       <div className="card-info">
-        <div className="card-title">{video.title}</div>
+        <div className={`card-title${hovering ? ' card-title--gold' : ''}`}>{video.title}</div>
         <div className="card-meta">
-          <span className="card-views">{formatViews(video.views)} views · {video.date || ''}</span>
-          {video.premium ? (
-            <span className="card-cat premium-label">PREMIUM</span>
-          ) : (
-            <span className="free-tag">FREE</span>
-          )}
+          <span className="card-views">{formatViews(video.views)} views</span>
+          {video.premium ? <span className="card-cat premium-label">PREMIUM</span> : <span className="free-tag">FREE</span>}
         </div>
       </div>
     </div>
   );
 }
-

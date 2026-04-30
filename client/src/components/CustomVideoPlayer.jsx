@@ -36,6 +36,28 @@ export default function CustomVideoPlayer({ src, poster }) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Mobile: track taps for skip zones. Desktop: handled by buttons.
+  const lastTapRef = { current: 0 };
+  const handleVideoClick = useCallback((e) => {
+    const isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isMobileDevice) { togglePlayPause(); return; }
+    const now = Date.now();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x    = e.clientX - rect.left;
+    const pct  = x / rect.width;
+    if (now - lastTapRef.current < 300) {
+      // Double tap: skip based on side
+      if (pct < 0.4)       skip(-10);
+      else if (pct > 0.6)  skip(10);
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+      setTimeout(() => {
+        if (Date.now() - lastTapRef.current >= 290) togglePlayPause();
+      }, 310);
+    }
+  }, []);
+
   const togglePlayPause = useCallback(() => {
     if (!videoRef.current) return;
     if (isEnded) {
@@ -52,6 +74,13 @@ export default function CustomVideoPlayer({ src, poster }) {
     }
     setIsPlaying(!isPlaying);
   }, [isPlaying, isEnded]);
+
+  const skip = (secs) => {
+    if (!videoRef.current) return;
+    const v = videoRef.current;
+    v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + secs));
+    showCtrl();
+  };
 
   const handleTimeChange = (e) => {
     if (videoRef.current) {
@@ -226,7 +255,7 @@ export default function CustomVideoPlayer({ src, poster }) {
         src={src}
         poster={poster}
         className="vp-video"
-        onClick={togglePlayPause}
+        onClick={handleVideoClick}
         onContextMenu={handleContextMenu}
         disablePictureInPicture
         playsInline
@@ -296,6 +325,23 @@ export default function CustomVideoPlayer({ src, poster }) {
                   <path d="M8 5v14l11-7z"/>
                 </svg>
               )}
+            </button>
+
+            {/* Rewind 10s */}
+            <button className="vp-btn vp-skip-btn" onClick={() => skip(-10)} title="Rewind 10s">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                <text x="12" y="14" text-anchor="middle" font-size="6" fill="white" font-weight="bold">10</text>
+              </svg>
+            </button>
+
+            {/* Forward 10s */}
+            <button className="vp-btn vp-skip-btn" onClick={() => skip(10)} title="Forward 10s">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                <path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm-11.58.59L12 13.17l5.59-5.58L19 9l-7 7-7-7 1.42-1.41z" style="display:none"/>
+                <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+                <text x="12" y="14" text-anchor="middle" font-size="6" fill="white" font-weight="bold">10</text>
+              </svg>
             </button>
 
             {/* Volume */}

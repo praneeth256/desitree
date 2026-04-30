@@ -1973,3 +1973,142 @@ footer {
     width: auto;
   }
 }
+
+/* ============================================================
+   Marquee banners
+   ============================================================ */
+.marquee-wrap {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 7px 0;
+  position: relative;
+}
+
+.marquee-home {
+  background: rgba(30, 12, 40, 0.6);
+  border-top: 1px solid rgba(255,80,180,0.15);
+  border-bottom: 1px solid rgba(255,80,180,0.15);
+}
+
+.marquee-player {
+  background: rgba(20, 16, 4, 0.7);
+  border-top: 1px solid rgba(240,192,64,0.18);
+  border-bottom: 1px solid rgba(240,192,64,0.18);
+  margin-bottom: 10px;
+  border-radius: 6px;
+}
+
+.marquee-track {
+  display: inline-flex;
+  animation: marquee-scroll 28s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.marquee-text {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0 12px;
+  letter-spacing: 0.02em;
+}
+
+/* Neon pinkish gold — home banner */
+.marquee-pink-gold {
+  color: #ff9de2;
+  text-shadow:
+    0 0 6px rgba(255,100,200,0.8),
+    0 0 14px rgba(255,50,160,0.5),
+    0 0 2px rgba(240,192,64,0.4);
+}
+
+/* Neon gold — player banner */
+.marquee-neon-gold {
+  color: #ffe066;
+  text-shadow:
+    0 0 6px rgba(255,220,50,0.9),
+    0 0 16px rgba(240,180,0,0.6),
+    0 0 2px rgba(255,255,180,0.3);
+}
+
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ============================================================
+   VideoCard gold hover title
+   ============================================================ */
+.card-title {
+  transition: color 0.2s;
+}
+.card-title--gold {
+  color: var(--accent) !important;
+  text-shadow: 0 0 8px rgba(240,192,64,0.35);
+}
+
+/* Touch devices: gold title on active (tap) state */
+@media (hover: none) {
+  .video-card:active .card-title {
+    color: var(--accent) !important;
+  }
+}
+
+/* ============================================================
+   Back button on Player page
+   ============================================================ */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 13px;
+  border-radius: 7px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-back:hover {
+  color: var(--accent);
+  border-color: rgba(240,192,64,0.4);
+}
+
+/* ============================================================
+   Pagination — First / Last buttons
+   ============================================================ */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 0 12px;
+  flex-wrap: wrap;
+}
+
+.btn-pagination {
+  padding: 7px 14px;
+  font-size: 0.82rem;
+}
+
+/* ============================================================
+   Skip button in video player
+   ============================================================ */
+.vp-skip-btn {
+  position: relative;
+}
+
+@media (max-width: 640px) {
+  .vp-skip-btn {
+    display: none; /* Hidden on mobile — skip via double-tap instead */
+  }
+  .marquee-text {
+    font-size: 0.76rem;
+  }
+}
