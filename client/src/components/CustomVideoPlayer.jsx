@@ -36,27 +36,7 @@ export default function CustomVideoPlayer({ src, poster }) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Mobile: track taps for skip zones. Desktop: handled by buttons.
-  const lastTapRef = { current: 0 };
-  const handleVideoClick = useCallback((e) => {
-    const isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (!isMobileDevice) { togglePlayPause(); return; }
-    const now = Date.now();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x    = e.clientX - rect.left;
-    const pct  = x / rect.width;
-    if (now - lastTapRef.current < 300) {
-      // Double tap: skip based on side
-      if (pct < 0.4)       skip(-10);
-      else if (pct > 0.6)  skip(10);
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-      setTimeout(() => {
-        if (Date.now() - lastTapRef.current >= 290) togglePlayPause();
-      }, 310);
-    }
-  }, []);
+  const lastTapRef = useRef(0);
 
   const togglePlayPause = useCallback(() => {
     if (!videoRef.current) return;
@@ -81,6 +61,24 @@ export default function CustomVideoPlayer({ src, poster }) {
     v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + secs));
     showCtrl();
   };
+
+  const handleVideoClick = useCallback((e) => {
+    const isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isMobileDevice) { togglePlayPause(); return; }
+    const now  = Date.now();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct  = (e.clientX - rect.left) / rect.width;
+    if (now - lastTapRef.current < 300) {
+      if (pct < 0.4)      skip(-10);
+      else if (pct > 0.6) skip(10);
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+      setTimeout(() => {
+        if (Date.now() - lastTapRef.current >= 290) togglePlayPause();
+      }, 310);
+    }
+  }, [togglePlayPause]);
 
   const handleTimeChange = (e) => {
     if (videoRef.current) {
