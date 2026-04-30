@@ -1,70 +1,88 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import '../styles/VideoPlayer.css';
 
-const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+const SPEEDS    = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const QUALITIES = ['Auto', '144p', '240p', '360p', '480p', '720p', '1080p'];
 
-export default function CustomVideoPlayer({ src, poster }) {
-  const videoRef = useRef(null);
-  const containerRef = useRef(null);
-  const controlsTimeoutRef = useRef(null);
-  const progressRef = useRef(null);
+/* ── Volume icon — plain function, NOT a React component ─────────── */
+function volumeIcon(isMuted, volume) {
+  if (isMuted || volume === 0) return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+      <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+    </svg>
+  );
+  if (volume < 0.5) return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+      <path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/>
+    </svg>
+  );
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+    </svg>
+  );
+}
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [lastVolume, setLastVolume] = useState(1);
+export default function CustomVideoPlayer({ src, poster }) {
+  const videoRef           = useRef(null);
+  const containerRef       = useRef(null);
+  const controlsTimeoutRef = useRef(null);
+  const progressRef        = useRef(null);
+  const lastTapRef         = useRef(0);
+
+  const [isPlaying,    setIsPlaying]    = useState(false);
+  const [currentTime,  setCurrentTime]  = useState(0);
+  const [duration,     setDuration]     = useState(0);
+  const [volume,       setVolume]       = useState(1);
+  const [lastVolume,   setLastVolume]   = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isEnded, setIsEnded] = useState(false);
+  const [isMuted,      setIsMuted]      = useState(false);
+  const [isEnded,      setIsEnded]      = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [settingsTab, setSettingsTab] = useState('speed'); // 'speed' | 'quality'
-  const [speed, setSpeed] = useState(1);
-  const [quality, setQuality] = useState('Auto');
-  const [buffered, setBuffered] = useState(0);
+  const [settingsTab,  setSettingsTab]  = useState('speed');
+  const [speed,        setSpeed]        = useState(1);
+  const [quality,      setQuality]      = useState('Auto');
+  const [buffered,     setBuffered]     = useState(0);
 
-  const formatTime = (time) => {
-    if (!time || isNaN(time)) return '0:00';
-    const hours = Math.floor(time / 3600);
-    const minutes = Math.floor((time % 3600) / 60);
-    const seconds = Math.floor(time % 60);
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const formatTime = (t) => {
+    if (!t || isNaN(t)) return '0:00';
+    const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = Math.floor(t % 60);
+    return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
   };
 
-  const lastTapRef = useRef(0);
+  const showCtrl = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (videoRef.current && !videoRef.current.paused) setShowControls(false);
+    }, 3000);
+  }, []);
 
-  const togglePlayPause = useCallback(() => {
-    if (!videoRef.current) return;
-    if (isEnded) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play();
-      setIsEnded(false);
-      setIsPlaying(true);
-      return;
-    }
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  }, [isPlaying, isEnded]);
-
-  const skip = (secs) => {
+  const skip = useCallback((secs) => {
     if (!videoRef.current) return;
     const v = videoRef.current;
     v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + secs));
     showCtrl();
-  };
+  }, [showCtrl]);
+
+  const togglePlayPause = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (isEnded) {
+      v.currentTime = 0;
+      v.play();
+      setIsEnded(false);
+      setIsPlaying(true);
+      return;
+    }
+    if (isPlaying) v.pause(); else v.play();
+    setIsPlaying(p => !p);
+  }, [isPlaying, isEnded]);
 
   const handleVideoClick = useCallback((e) => {
-    const isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (!isMobileDevice) { togglePlayPause(); return; }
+    const isMob = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isMob) { togglePlayPause(); return; }
     const now  = Date.now();
     const rect = e.currentTarget.getBoundingClientRect();
     const pct  = (e.clientX - rect.left) / rect.width;
@@ -78,7 +96,7 @@ export default function CustomVideoPlayer({ src, poster }) {
         if (Date.now() - lastTapRef.current >= 290) togglePlayPause();
       }, 310);
     }
-  }, [togglePlayPause]);
+  }, [togglePlayPause, skip]);
 
   const handleTimeChange = (e) => {
     if (videoRef.current) {
@@ -90,58 +108,45 @@ export default function CustomVideoPlayer({ src, poster }) {
   const handleVolumeChange = (e) => {
     const vol = Number(e.target.value);
     setVolume(vol);
-    if (vol === 0) {
-      setIsMuted(true);
-      if (videoRef.current) videoRef.current.muted = true;
-    } else {
-      setIsMuted(false);
-      setLastVolume(vol);
-      if (videoRef.current) {
-        videoRef.current.muted = false;
-        videoRef.current.volume = vol;
-      }
-    }
     if (videoRef.current) videoRef.current.volume = vol;
+    if (vol === 0) { setIsMuted(true); if (videoRef.current) videoRef.current.muted = true; }
+    else { setIsMuted(false); setLastVolume(vol); if (videoRef.current) videoRef.current.muted = false; }
   };
 
   const toggleMute = () => {
     if (!videoRef.current) return;
-    const nextMuted = !isMuted;
-    setIsMuted(nextMuted);
-    if (nextMuted) {
+    if (isMuted) {
+      const restore = lastVolume || 0.5;
+      videoRef.current.muted  = false;
+      videoRef.current.volume = restore;
+      setVolume(restore);
+      setIsMuted(false);
+    } else {
       setLastVolume(volume > 0 ? volume : lastVolume);
       videoRef.current.muted = true;
-    } else {
-      videoRef.current.muted = false;
-      const restore = lastVolume || 0.5;
-      setVolume(restore);
-      videoRef.current.volume = restore;
+      setIsMuted(true);
     }
   };
-
-  const handleContextMenu = (e) => e.preventDefault();
 
   const enterFullscreen = useCallback(async () => {
     const el = containerRef.current;
     if (!el) return;
     try {
-      if (el.requestFullscreen) await el.requestFullscreen();
+      if (el.requestFullscreen)            await el.requestFullscreen();
       else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-      else if (el.msRequestFullscreen) await el.msRequestFullscreen();
       else if (videoRef.current?.webkitEnterFullscreen) videoRef.current.webkitEnterFullscreen();
-    } catch (err) {}
+    } catch {}
   }, []);
 
   const exitFullscreen = useCallback(async () => {
     try {
-      if (document.exitFullscreen) await document.exitFullscreen();
+      if (document.exitFullscreen)            await document.exitFullscreen();
       else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
-      else if (document.msExitFullscreen) await document.msExitFullscreen();
-    } catch (err) {}
+    } catch {}
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    const el = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    const el = document.fullscreenElement || document.webkitFullscreenElement;
     if (!el) enterFullscreen(); else exitFullscreen();
   }, [enterFullscreen, exitFullscreen]);
 
@@ -151,94 +156,61 @@ export default function CustomVideoPlayer({ src, poster }) {
     setShowSettings(false);
   };
 
-  const changeQuality = (q) => {
-    setQuality(q);
-    setShowSettings(false);
-  };
+  const changeQuality = (q) => { setQuality(q); setShowSettings(false); };
 
-  const showCtrl = () => {
-    setShowControls(true);
-    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    controlsTimeoutRef.current = setTimeout(() => {
-      if (videoRef.current && !videoRef.current.paused) setShowControls(false);
-    }, 3000);
-  };
+  const handleContextMenu = (e) => e.preventDefault();
 
+  /* ── Effects ─────────────────────────────────────────────────── */
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const onMeta = () => setDuration(video.duration);
-    const onTime = () => {
-      setCurrentTime(video.currentTime);
-      // Update buffered
-      if (video.buffered.length > 0) {
-        setBuffered((video.buffered.end(video.buffered.length - 1) / video.duration) * 100);
-      }
+    const v = videoRef.current;
+    if (!v) return;
+    const onMeta  = () => setDuration(v.duration);
+    const onTime  = () => {
+      setCurrentTime(v.currentTime);
+      if (v.buffered.length > 0)
+        setBuffered((v.buffered.end(v.buffered.length - 1) / v.duration) * 100);
     };
     const onEnded = () => { setIsPlaying(false); setIsEnded(true); setShowControls(true); };
-    const onPlay = () => setIsPlaying(true);
+    const onPlay  = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
-
-    video.addEventListener('loadedmetadata', onMeta);
-    video.addEventListener('timeupdate', onTime);
-    video.addEventListener('ended', onEnded);
-    video.addEventListener('play', onPlay);
-    video.addEventListener('pause', onPause);
+    v.addEventListener('loadedmetadata', onMeta);
+    v.addEventListener('timeupdate',     onTime);
+    v.addEventListener('ended',          onEnded);
+    v.addEventListener('play',           onPlay);
+    v.addEventListener('pause',          onPause);
     return () => {
-      video.removeEventListener('loadedmetadata', onMeta);
-      video.removeEventListener('timeupdate', onTime);
-      video.removeEventListener('ended', onEnded);
-      video.removeEventListener('play', onPlay);
-      video.removeEventListener('pause', onPause);
+      v.removeEventListener('loadedmetadata', onMeta);
+      v.removeEventListener('timeupdate',     onTime);
+      v.removeEventListener('ended',          onEnded);
+      v.removeEventListener('play',           onPlay);
+      v.removeEventListener('pause',          onPause);
     };
   }, []);
 
   useEffect(() => {
-    const onFsChange = () => {
-      const el = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    const onFs = () => {
+      const el = document.fullscreenElement || document.webkitFullscreenElement;
       setIsFullscreen(!!el);
     };
-    document.addEventListener('fullscreenchange', onFsChange);
-    document.addEventListener('webkitfullscreenchange', onFsChange);
-    document.addEventListener('msfullscreenchange', onFsChange);
+    document.addEventListener('fullscreenchange',       onFs);
+    document.addEventListener('webkitfullscreenchange', onFs);
     return () => {
-      document.removeEventListener('fullscreenchange', onFsChange);
-      document.removeEventListener('webkitfullscreenchange', onFsChange);
-      document.removeEventListener('msfullscreenchange', onFsChange);
+      document.removeEventListener('fullscreenchange',       onFs);
+      document.removeEventListener('webkitfullscreenchange', onFs);
     };
   }, []);
 
-  // Close settings on outside click
   useEffect(() => {
     if (!showSettings) return;
-    const handler = (e) => {
-      if (!e.target.closest('.vp-settings-wrap')) setShowSettings(false);
-    };
+    const handler = (e) => { if (!e.target.closest('.vp-settings-wrap')) setShowSettings(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showSettings]);
 
+  /* ── Derived ─────────────────────────────────────────────────── */
   const progress = duration ? (currentTime / duration) * 100 : 0;
 
-  const VolumeIcon = () => {
-    if (isMuted || volume === 0) return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-      </svg>
-    );
-    if (volume < 0.5) return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-        <path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/>
-      </svg>
-    );
-    return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-      </svg>
-    );
-  };
-
+  /* ── Render ──────────────────────────────────────────────────── */
   return (
     <div
       ref={containerRef}
@@ -257,7 +229,6 @@ export default function CustomVideoPlayer({ src, poster }) {
         onContextMenu={handleContextMenu}
         disablePictureInPicture
         playsInline
-        muted={isMuted}
         controlsList="nodownload nofullscreen noremoteplayback"
       />
 
@@ -273,7 +244,7 @@ export default function CustomVideoPlayer({ src, poster }) {
         </div>
       )}
 
-      {/* Big play button when paused */}
+      {/* Big play when paused */}
       {!isPlaying && !isEnded && (
         <div className="vp-overlay vp-pause-overlay" onClick={togglePlayPause}>
           <button className="vp-big-play-btn" type="button" aria-label="Play">
@@ -286,24 +257,19 @@ export default function CustomVideoPlayer({ src, poster }) {
         </div>
       )}
 
-      {/* Controls bar */}
+      {/* Controls */}
       <div className={`vp-controls${showControls ? ' vp-controls--visible' : ''}`}>
 
         {/* Progress bar */}
         <div className="vp-progress-wrap">
           <div className="vp-progress-track">
             <div className="vp-buffered" style={{ width: `${buffered}%` }} />
-            <div className="vp-played" style={{ width: `${progress}%` }} />
+            <div className="vp-played"   style={{ width: `${progress}%` }} />
             <input
               ref={progressRef}
-              type="range"
-              min="0"
-              max={duration || 0}
-              step="0.1"
-              value={currentTime}
-              onChange={handleTimeChange}
-              className="vp-range vp-progress-range"
-              aria-label="Seek"
+              type="range" min="0" max={duration || 0} step="0.1"
+              value={currentTime} onChange={handleTimeChange}
+              className="vp-range vp-progress-range" aria-label="Seek"
             />
           </div>
         </div>
@@ -311,6 +277,7 @@ export default function CustomVideoPlayer({ src, poster }) {
         {/* Bottom row */}
         <div className="vp-bottom">
           <div className="vp-left">
+
             {/* Play/Pause */}
             <button className="vp-btn" onClick={togglePlayPause} title={isPlaying ? 'Pause' : 'Play'}>
               {isPlaying ? (
@@ -319,9 +286,7 @@ export default function CustomVideoPlayer({ src, poster }) {
                   <rect x="15" y="4" width="4" height="16" rx="1"/>
                 </svg>
               ) : (
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
               )}
             </button>
 
@@ -329,49 +294,38 @@ export default function CustomVideoPlayer({ src, poster }) {
             <button className="vp-btn vp-skip-btn" onClick={() => skip(-10)} title="Rewind 10s">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                 <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                <text x="12" y="14" text-anchor="middle" font-size="6" fill="white" font-weight="bold">10</text>
+                <text x="12" y="14.5" textAnchor="middle" fontSize="5.5" fill="white" fontWeight="bold">10</text>
               </svg>
             </button>
 
             {/* Forward 10s */}
             <button className="vp-btn vp-skip-btn" onClick={() => skip(10)} title="Forward 10s">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                <path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm-11.58.59L12 13.17l5.59-5.58L19 9l-7 7-7-7 1.42-1.41z" style="display:none"/>
                 <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
-                <text x="12" y="14" text-anchor="middle" font-size="6" fill="white" font-weight="bold">10</text>
+                <text x="12" y="14.5" textAnchor="middle" fontSize="5.5" fill="white" fontWeight="bold">10</text>
               </svg>
             </button>
 
             {/* Volume */}
             <div className="vp-volume-wrap">
               <button className="vp-btn" onClick={toggleMute} title={isMuted ? 'Unmute' : 'Mute'}>
-                <VolumeIcon />
+                {volumeIcon(isMuted, volume)}
               </button>
               <div className="vp-volume-slider-wrap">
                 <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="vp-range vp-volume-range"
-                  title="Volume"
+                  type="range" min="0" max="1" step="0.05"
+                  value={isMuted ? 0 : volume} onChange={handleVolumeChange}
+                  className="vp-range vp-volume-range" title="Volume"
                 />
               </div>
             </div>
 
             {/* Time */}
-            <span className="vp-time">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
+            <span className="vp-time">{formatTime(currentTime)} / {formatTime(duration)}</span>
           </div>
 
           <div className="vp-right">
-            {/* Speed badge */}
-            {speed !== 1 && (
-              <span className="vp-speed-badge">{speed}x</span>
-            )}
+            {speed !== 1 && <span className="vp-speed-badge">{speed}x</span>}
 
             {/* Settings */}
             <div className="vp-settings-wrap">
@@ -380,7 +334,8 @@ export default function CustomVideoPlayer({ src, poster }) {
                 onClick={() => setShowSettings(s => !s)}
                 title="Settings"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style={{ transition: 'transform 0.3s', transform: showSettings ? 'rotate(45deg)' : 'none' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white"
+                  style={{ transition: 'transform 0.3s', transform: showSettings ? 'rotate(45deg)' : 'none' }}>
                   <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
                 </svg>
               </button>
@@ -388,32 +343,18 @@ export default function CustomVideoPlayer({ src, poster }) {
               {showSettings && (
                 <div className="vp-settings-panel">
                   <div className="vp-settings-tabs">
-                    <button
-                      className={`vp-stab${settingsTab === 'speed' ? ' vp-stab--active' : ''}`}
-                      onClick={() => setSettingsTab('speed')}
-                    >Speed</button>
-                    <button
-                      className={`vp-stab${settingsTab === 'quality' ? ' vp-stab--active' : ''}`}
-                      onClick={() => setSettingsTab('quality')}
-                    >Quality</button>
+                    <button className={`vp-stab${settingsTab === 'speed'   ? ' vp-stab--active' : ''}`} onClick={() => setSettingsTab('speed')}>Speed</button>
+                    <button className={`vp-stab${settingsTab === 'quality' ? ' vp-stab--active' : ''}`} onClick={() => setSettingsTab('quality')}>Quality</button>
                   </div>
                   <div className="vp-settings-list">
                     {settingsTab === 'speed' && SPEEDS.map(s => (
-                      <button
-                        key={s}
-                        className={`vp-sitem${speed === s ? ' vp-sitem--active' : ''}`}
-                        onClick={() => changeSpeed(s)}
-                      >
+                      <button key={s} className={`vp-sitem${speed === s ? ' vp-sitem--active' : ''}`} onClick={() => changeSpeed(s)}>
                         {s === 1 ? 'Normal (1x)' : `${s}x`}
                         {speed === s && <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
                       </button>
                     ))}
                     {settingsTab === 'quality' && QUALITIES.map(q => (
-                      <button
-                        key={q}
-                        className={`vp-sitem${quality === q ? ' vp-sitem--active' : ''}`}
-                        onClick={() => changeQuality(q)}
-                      >
+                      <button key={q} className={`vp-sitem${quality === q ? ' vp-sitem--active' : ''}`} onClick={() => changeQuality(q)}>
                         {q}
                         {quality === q && <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
                       </button>
