@@ -11,28 +11,77 @@ async function ensureAuth() {
 }
 
 // Cloudinary upload function
-export async function uploadToCloudinary(file, title, description, category, thumbnailFile = null) {
+export async function uploadToCloudinary(file, title, description, category, thumbnailFile = null, onProgress = null) {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   if (!cloudName) {
     throw new Error('Cloudinary cloud name is missing. Please set VITE_CLOUDINARY_CLOUD_NAME in your Vercel environment variables.');
   }
 
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', 'desitree_videos'); // Must be an unsigned preset in Cloudinary
+  const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks — stays well under limits
+  const useChunked = file.size > 90 * 1024 * 1024; // chunk anything over 90MB
 
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
-    method: 'POST',
-    body: formData,
-  });
+  let data;
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: { message: 'Unknown Cloudinary error' } }));
-    const errorMessage = errorData?.error?.message || JSON.stringify(errorData);
-    throw new Error(`Cloudinary upload failed: ${errorMessage}`);
+  if (useChunked) {
+    // ── Chunked upload for large files ──────────────────────────────
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    let publicId = null;
+
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * CHUNK_SIZE;
+      const end   = Math.min(file.size, start + CHUNK_SIZE);
+      const chunk = file.slice(start, end);
+
+      const chunkForm = new FormData();
+      chunkForm.append('file', chunk);
+      chunkForm.append('upload_preset', 'desitree_videos');
+      if (publicId) chunkForm.append('public_id', publicId);
+
+      const rangeHeader = `bytes ${start}-${end - 1}/${file.size}`;
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+        method: 'POST',
+        headers: { 'X-Unique-Upload-Id': `dt-${Date.now()}`, 'Content-Range': rangeHeader },
+        body: chunkForm,
+      });
+
+      // 200 = done, 206 = chunk accepted, keep going
+      if (res.status === 200) {
+        data = await res.json();
+        if (onProgress) onProgress(100);
+        break;
+      } else if (res.status === 206) {
+        const partial = await res.json().catch(() => ({}));
+        if (partial.public_id) publicId = partial.public_id;
+        if (onProgress) onProgress(Math.round(((i + 1) / totalChunks) * 95));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`Chunk upload failed at chunk ${i + 1}: ${err?.error?.message || res.status}`);
+      }
+    }
+
+    if (!data) throw new Error('Chunked upload did not complete — no final response received.');
+  } else {
+    // ── Standard upload for files under 90MB ───────────────────────
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'desitree_videos');
+
+    if (onProgress) onProgress(10);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: { message: 'Unknown Cloudinary error' } }));
+      throw new Error(`Cloudinary upload failed: ${errorData?.error?.message || JSON.stringify(errorData)}`);
+    }
+
+    data = await response.json();
+    if (onProgress) onProgress(90);
   }
-
-  const data = await response.json();
 
   let thumbnailUrl = data.thumbnail_url || data.secure_url.replace('.mp4', '.jpg');
 

@@ -20,6 +20,7 @@ export default function Admin() {
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [message, setMessage]           = useState('');
   const [isUploading, setIsUploading]   = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [searchTerm, setSearchTerm]     = useState('');
 
   // Manage tab
@@ -71,9 +72,14 @@ export default function Admin() {
     e.preventDefault();
     if (!videoFile) { setMessage('Please select a video file'); return; }
     setIsUploading(true);
+    setUploadProgress(0);
     setMessage('');
     try {
-      await uploadToCloudinary(videoFile, form.title, form.description, form.category, thumbnailFile);
+      await uploadToCloudinary(
+        videoFile, form.title, form.description, form.category, thumbnailFile,
+        (pct) => setUploadProgress(pct)
+      );
+      setUploadProgress(100);
       setMessage('✅ Video uploaded successfully!');
       setForm(initialForm);
       setVideoFile(null);
@@ -82,6 +88,7 @@ export default function Admin() {
       setMessage('❌ Upload failed: ' + err.message);
     } finally {
       setIsUploading(false);
+      setTimeout(() => setUploadProgress(0), 2000);
     }
   };
 
@@ -186,12 +193,27 @@ export default function Admin() {
                   Thumbnail (optional)
                   <input type="file" accept="image/*" onChange={e => setThumbnailFile(e.target.files[0])} />
                 </label>
+                {videoFile && (
+                  <div className="upload-file-info">
+                    <span>📁 {videoFile.name}</span>
+                    <span className={videoFile.size > 100 * 1024 * 1024 ? 'upload-size-warn' : 'upload-size-ok'}>
+                      {(videoFile.size / 1024 / 1024).toFixed(1)} MB
+                      {videoFile.size > 100 * 1024 * 1024 && ' · Large file — will upload in chunks'}
+                    </span>
+                  </div>
+                )}
                 <button type="submit" disabled={isUploading} className="btn-upload">
                   {isUploading ? (
-                    <><span className="upload-spinner" /> Uploading...</>
+                    <><span className="upload-spinner" /> {uploadProgress > 0 ? `Uploading ${uploadProgress}%` : 'Preparing...'}</>
                   ) : 'Upload Video'}
                 </button>
               </form>
+              {isUploading && uploadProgress > 0 && (
+                <div className="upload-progress-wrap">
+                  <div className="upload-progress-bar" style={{ width: `${uploadProgress}%` }} />
+                  <span className="upload-progress-label">{uploadProgress}%</span>
+                </div>
+              )}
               {message && <p className={`admin-msg ${message.startsWith('✅') ? 'admin-msg--ok' : 'admin-msg--err'}`}>{message}</p>}
             </>
           )}
