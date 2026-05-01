@@ -4,6 +4,7 @@ import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import { uploadToCloudinary, fetchContacts, fetchVideos, deleteVideo, updateVideoMetadata } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import VideoThumbnailPicker from '../components/VideoThumbnailPicker';
 
 const initialForm = { title: '', description: '', category: 'indian' };
 
@@ -18,6 +19,7 @@ export default function Admin() {
   const [form, setForm]                 = useState(initialForm);
   const [videoFile, setVideoFile]       = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
+  const [capturedThumb, setCapturedThumb]   = useState(null); // {type:'frame',dataUrl} or {type:'file',file}
   const [message, setMessage]           = useState('');
   const [isUploading, setIsUploading]   = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -75,15 +77,21 @@ export default function Admin() {
     setUploadProgress(0);
     setMessage('');
     try {
+      // Resolve thumbnail: manual upload file > captured frame > nothing (Cloudinary auto)
+      let finalThumb = thumbnailFile; // file upload takes priority
+      if (!finalThumb && capturedThumb?.type === 'file') finalThumb = capturedThumb.file;
+      const frameDataUrl = (!finalThumb && capturedThumb?.type === 'frame') ? capturedThumb.dataUrl : null;
       await uploadToCloudinary(
-        videoFile, form.title, form.description, form.category, thumbnailFile,
-        (pct) => setUploadProgress(pct)
+        videoFile, form.title, form.description, form.category, finalThumb,
+        (pct) => setUploadProgress(pct),
+        frameDataUrl
       );
       setUploadProgress(100);
       setMessage('✅ Video uploaded successfully!');
       setForm(initialForm);
       setVideoFile(null);
       setThumbnailFile(null);
+      setCapturedThumb(null);
     } catch (err) {
       setMessage('❌ Upload failed: ' + err.message);
     } finally {
@@ -189,10 +197,23 @@ export default function Admin() {
                   Video File *
                   <input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files[0])} required />
                 </label>
-                <label>
-                  Thumbnail (optional)
-                  <input type="file" accept="image/*" onChange={e => setThumbnailFile(e.target.files[0])} />
-                </label>
+                {/* Thumbnail picker — shown once video is selected */}
+                {videoFile && (
+                  <div className="tnp-section">
+                    <div className="tnp-section-label">Thumbnail</div>
+                    <VideoThumbnailPicker
+                      videoFile={videoFile}
+                      onCapture={(t) => { setCapturedThumb(t); setThumbnailFile(null); }}
+                    />
+                    <div className="tnp-or-divider">or override with a file</div>
+                    <label className="tnp-file-label">
+                      Upload custom image
+                      <input type="file" accept="image/*"
+                        onChange={e => { setThumbnailFile(e.target.files[0]); setCapturedThumb(null); }} />
+                    </label>
+                    {thumbnailFile && <span className="tnp-override-badge">✅ Custom image selected: {thumbnailFile.name}</span>}
+                  </div>
+                )}
                 {videoFile && (
                   <div className="upload-file-info">
                     <span>📁 {videoFile.name}</span>

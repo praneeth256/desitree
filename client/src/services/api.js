@@ -11,7 +11,7 @@ async function ensureAuth() {
 }
 
 // Cloudinary upload function
-export async function uploadToCloudinary(file, title, description, category, thumbnailFile = null, onProgress = null) {
+export async function uploadToCloudinary(file, title, description, category, thumbnailFile = null, onProgress = null, frameDataUrl = null) {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   if (!cloudName) {
     throw new Error('Cloudinary cloud name is missing. Please set VITE_CLOUDINARY_CLOUD_NAME in your Vercel environment variables.');
@@ -85,21 +85,22 @@ export async function uploadToCloudinary(file, title, description, category, thu
 
   let thumbnailUrl = data.thumbnail_url || data.secure_url.replace('.mp4', '.jpg');
 
-  // Upload custom thumbnail if provided
-  if (thumbnailFile) {
+  // Upload thumbnail: prefer file, then frame capture, else use Cloudinary auto-thumb
+  const thumbSource = thumbnailFile || (frameDataUrl ? dataUrlToBlob(frameDataUrl) : null);
+  if (thumbSource) {
     const thumbFormData = new FormData();
-    thumbFormData.append('file', thumbnailFile);
+    thumbFormData.append('file', thumbSource);
     thumbFormData.append('upload_preset', 'desitree_videos');
-
-    const thumbResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-      method: 'POST',
-      body: thumbFormData,
-    });
-
-    if (thumbResponse.ok) {
-      const thumbData = await thumbResponse.json();
-      thumbnailUrl = thumbData.secure_url;
-    }
+    try {
+      const thumbResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: thumbFormData,
+      });
+      if (thumbResponse.ok) {
+        const thumbData = await thumbResponse.json();
+        thumbnailUrl = thumbData.secure_url;
+      }
+    } catch (e) { console.warn('Thumbnail upload failed, using auto:', e); }
   }
 
   // Save video metadata to Firestore
@@ -332,4 +333,14 @@ export async function fetchContacts() {
     contacts.push({ id: doc.id, ...doc.data() });
   });
   return contacts;
+}
+
+// Convert base64 dataURL to Blob for upload
+function dataUrlToBlob(dataUrl) {
+  const [header, data] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const binary = atob(data);
+  const arr = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+  return new Blob([arr], { type: mime });
 }
